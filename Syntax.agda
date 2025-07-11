@@ -50,6 +50,12 @@ data 0Tm where
   
   -- Derivable:
   π' : Tm Γ A → 0Tm Γ A
+
+  -- Derivable:
+  lam : 0Tm (Γ , A) (B [ none ]) → 0Tm Γ (Π A B)
+  lam0 : 0Tm (Γ ,0 A) B → 0Tm Γ (Π0 A B)
+  app : 0Tm Γ (Π A B) → (a : 0Tm Γ A) → 0Tm Γ (B [ < a >0 ])
+  app0 : 0Tm Γ (Π0 A B) → (a : 0Tm Γ A) → 0Tm Γ (B [ < a >0 ])
   
 data Tm where
   _[_] : Tm Δ A → (σ : Sub Γ Δ) → Tm Γ (A [ σ ])
@@ -65,4 +71,5 @@ data Tm where
   
   -- Derivable:
   app : Tm Γ (Π A B) → (a : Tm Γ A) → Tm Γ (B [ < π' a >0 ])
+  app0 : Tm Γ (Π0 A B) → (a : 0Tm Γ A) → Tm Γ (B [ < a >0 ])
   
