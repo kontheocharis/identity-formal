@@ -37,10 +37,19 @@ data Sub where
   _,_ : (σ : Sub Γ Δ) → Tm Γ (A [ σ ]) → Sub Γ (Δ , A)
   _,0_ : (σ : Sub Γ Δ) → 0Tm Γ (A [ σ ]) → Sub Γ (Δ ,0 A)
 
-  -- these should be derivable if we have the proper equations but it's easier
-  -- to add them here
+  -- Derivable: (if we have the proper equations)
   none : Sub (Γ , A) (Γ ,0 A)
   <_> : Tm Γ A → Sub Γ (Γ , A)
+  <_>0 : 0Tm Γ A → Sub Γ (Γ ,0 A)
+  
+data 0Tm where
+  _[_] : 0Tm Δ A → (σ : Sub Γ Δ) → 0Tm Γ (A [ σ ])
+  q0 : 0Tm (Γ ,0 A) (A [ p0 ])
+
+  π : Tm (0× Γ) A → 0Tm Γ (A [ id ,0× ])
+  
+  -- Derivable:
+  π' : Tm Γ A → 0Tm Γ A
   
 data Tm where
   _[_] : Tm Δ A → (σ : Sub Γ Δ) → Tm Γ (A [ σ ])
@@ -54,9 +63,6 @@ data Tm where
 
   π† : 0Tm Γ (A [ id ,0× ]) → Tm (0× Γ) A
   
-data 0Tm where
-  _[_] : 0Tm Δ A → (σ : Sub Γ Δ) → 0Tm Γ (A [ σ ])
-  q0 : 0Tm (Γ ,0 A) (A [ p0 ])
-
-  π : Tm (0× Γ) A → 0Tm Γ (A [ id ,0× ])
+  -- Derivable:
+  app : Tm Γ (Π A B) → (a : Tm Γ A) → Tm Γ (B [ < π' a >0 ])
   

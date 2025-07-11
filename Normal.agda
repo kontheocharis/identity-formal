@@ -23,7 +23,7 @@ data Ty¬η : ∀ Γ → Ty Γ → Set where
   El¬η : ∀ t → Ty¬η Γ (El t)
 
 data Nf where
-  lam : Nf (Γ , A) B → Nf Γ (Π A B)
+  lam : Nf (Γ , A) (B [ none ]) → Nf Γ (Π A B)
   
   -- Anything with η rules should be η-long
   ne : Ne Γ A → Ty¬η Γ A → Nf Γ A
@@ -34,13 +34,13 @@ data Var where
 
 data Ne where
   var : Var Γ A → Ne Γ A
-  app : Ne Γ (Π A B) → (a : Ne Γ A) → Ne Γ (B [ < ⌜ a ⌝ne > ])
+  app : Ne Γ (Π A B) → (a : Ne Γ A) → Ne Γ (B [ < π' (⌜ a ⌝ne) >0 ])
   
 ⌜ vz ⌝var = q
 ⌜ vs i ⌝var = (⌜ i ⌝var) [ p ]
 
 ⌜ var i ⌝ne = ⌜ i ⌝var
-⌜ app f x ⌝ne = ap (⌜ f ⌝ne) [ < ⌜ x ⌝ne > ]
+⌜ app f x ⌝ne = app (⌜ f ⌝ne) (⌜ x ⌝ne)
 
 ⌜ lam f ⌝nf = lam (⌜ f ⌝nf)
 ⌜ ne n _ ⌝nf = ⌜ n ⌝ne
@@ -55,3 +55,4 @@ vs i ≡var? vs i' with i ≡var? i'
 ... | no i¬≡ = no λ { refl → i¬≡ refl }
 vz ≡var? vs i' = no λ ()
 vs i ≡var? vz = no λ ()
+ 
