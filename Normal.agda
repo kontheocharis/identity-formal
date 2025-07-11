@@ -1,10 +1,17 @@
 module Normal where
 
 open import Syntax
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Nullary using (Dec; yes; no)
 
 data Var : ∀ Γ → Ty Γ → Set
 data Nf : ∀ Γ → Ty Γ → Set
 data Ne : ∀ Γ → Ty Γ → Set
+
+variable  
+  n n' m m' : Nf _ _
+  e e' u u' : Ne _ _
+  v v' : Var _ _
 
 ⌜_⌝var : Var Γ A → Tm Γ A
 ⌜_⌝ne : Ne Γ A → Tm Γ A
@@ -37,7 +44,14 @@ data Ne where
 
 ⌜ lam f ⌝nf = lam (⌜ f ⌝nf)
 ⌜ ne n _ ⌝nf = ⌜ n ⌝ne
+  
 
-variable  
-  n n' m m' : Nf _ _
-  e e' u u' : Ne _ _
+-- Decidable equality
+
+_≡var?_ : (v : Var Γ A) → (v' : Var Γ A) → Dec (v ≡ v')
+vz ≡var? vz = yes refl
+vs i ≡var? vs i' with i ≡var? i'
+... | yes refl = yes refl
+... | no i¬≡ = no λ { refl → i¬≡ refl }
+vz ≡var? vs i' = no λ ()
+vs i ≡var? vz = no λ ()
