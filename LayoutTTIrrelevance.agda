@@ -109,14 +109,22 @@ _!!_ : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (As !sz i)
 (A ∷ _) !! zero = A
 (_ ∷ As) !! (suc n) = As !! n
 
+data Con where
+  ∙ : Con ∙
+  _,0_ : ∀ {0Γ} → (Γ : Con 0Γ) → (0A : 0Ty 0Γ) → Con (0Γ , 0A)
+  _,_ : ∀ {0Γ} → (Γ : Con 0Γ) → ∀ {0A b} (A : Ty 0Γ 0A b) → Con (0Γ , 0A)
+  
+↑ : (0Γ : 0Con) → Con 0Γ
+↑ ∙ = ∙ 
+↑ (Γ , A) = (↑ Γ) ,0 A
+
 data Sz where
   _[_] : Sz 0Δ → 0Sub 0Γ 0Δ → Sz 0Γ
   `0` : Sz 0Γ
   ptr : Sz 0Γ
   idx : Sz 0Γ
   _+_ : Sz 0Γ → Sz 0Γ → Sz 0Γ
-  _⨾_ : (A : Ty 0Γ 0A b) → Sz (0Γ , 0A) → Sz 0Γ
-  _#_ : (n : Szs 0Γ) → 0Tm 0Γ (Fin ⌜ len n ⌝) → Sz 0Γ
+  _⨾_ : (A : Ty 0Γ 0A b) → (n : Szs (0Γ , 0A)) → Tm ((↑ 0Γ) , A) ({!   !} ⌜ len n ⌝) 0a → Sz 0Γ
 
 -- Skeleton of Sz
 data By : Set where
@@ -132,17 +140,11 @@ by `0` = `0`
 by ptr = ptr
 by idx = idx
 by (b + b') = by b + by b'
-by (_⨾_ {b = b} _ b') = by b + by b'
-by (xs # _) = maxBys xs
+by (_⨾_ {b = b} _ bs _) = by b + maxBys bs
   where
     maxBys : Szs 0Γ → By
     maxBys [] = `0`
     maxBys (x ∷ xs) = max (by x) (maxBys xs)
-
-data Con where
-  ∙ : Con ∙
-  _,0_ : ∀ {0Γ} → (Γ : Con 0Γ) → (0A : 0Ty 0Γ) → Con (0Γ , 0A)
-  _,_ : ∀ {0Γ} → (Γ : Con 0Γ) → ∀ {0A b} (A : Ty 0Γ 0A b) → Con (0Γ , 0A)
   
 data Ty where
   _[_] : Ty 0Δ 0A b → (0σ : 0Sub 0Γ 0Δ) → Ty 0Γ (0A [ 0σ ]) (b [ 0σ ])
@@ -157,9 +159,9 @@ data Ty where
   Π0 : (0A : 0Ty 0Γ) → ∀ {0B} → Ty (0Γ , 0A) 0B (b' [ p ]) → Ty 0Γ (Π 0A 0B) b'
   
   Σ : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B (b' [ p ]) → Ty 0Γ (Σ 0A 0B) (b + b')
-  ΣD : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B b' → Ty 0Γ (Σ 0A 0B) (A ⨾ b')
+  -- ΣD : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B b' → Ty 0Γ (Σ 0A 0B) (A ⨾ b')
   
-  Fit : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (bs # ⌜ i ⌝𝔽)
+  -- Fit : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (bs # ⌜ i ⌝𝔽)
   
 data Sub where
   id : Sub Γ Γ id
@@ -193,8 +195,8 @@ data Tm where
   fst : Tm Γ (Σ A B) 0a → Tm Γ A (fst 0a)
   snd : Tm Γ (Σ A B) 0b → Tm Γ (B [ < fst 0b > ]) (snd 0b)
   
-  pairD : Tm Γ A 0a → Tm Γ (B [ < 0a > ]) 0b → Tm Γ (ΣD A B) (pair 0a 0b)
-  fstD : Tm Γ (ΣD A B) 0a → Tm Γ A (fst 0a)
-  sndD : Tm Γ (ΣD A B) 0b → Tm Γ (B [ < fst 0b > ]) (snd 0b) 
+  -- pairD : Tm Γ A 0a → Tm Γ (B [ < 0a > ]) 0b → Tm Γ (ΣD A B) (pair 0a 0b)
+  -- fstD : Tm Γ (ΣD A B) 0a → Tm Γ A (fst 0a)
+  -- sndD : Tm Γ (ΣD A B) 0b → Tm Γ (B [ < fst 0b > ]) (snd 0b) 
   
-  fit : ∀ i {0a} → Tm Γ (As !! i) 0a → Tm Γ (Fit As i) 0a
+  -- fit : ∀ i {0a} → Tm Γ (As !! i) 0a → Tm Γ (Fit As i) 0a
