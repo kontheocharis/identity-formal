@@ -1,4 +1,4 @@
-module Irrelevance2 where
+module DispIrrelevance where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 

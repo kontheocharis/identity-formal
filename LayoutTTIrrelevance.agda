@@ -1,6 +1,8 @@
-module Irrelevance3 where
+module LayoutTTIrrelevance where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Data.Nat using (ℕ; zero; suc)
+open import Data.Fin using (zero; suc) renaming (Fin to 𝔽)
 
 data 0Con : Set
 data Con : 0Con → Set
@@ -37,6 +39,8 @@ data 0Ty where
   El : 0Tm 0Γ (U b) → 0Ty 0Γ
   Π : (A : 0Ty 0Γ) → 0Ty (0Γ , A) → 0Ty 0Γ
   Σ : (A : 0Ty 0Γ) → 0Ty (0Γ , A) → 0Ty 0Γ
+  Nat : 0Ty 0Γ
+  Fin : 0Tm 0Γ Nat → 0Ty 0Γ
   
 data 0Sub where
   id : 0Sub 0Γ 0Γ
@@ -59,22 +63,67 @@ data 0Tm where
   fst : 0Tm 0Γ (Σ 0A 0B) → 0Tm 0Γ 0A
   snd : (p : 0Tm 0Γ (Σ 0A 0B)) → 0Tm 0Γ (0B [ < fst p > ])
   
+  ze : 0Tm 0Γ Nat
+  su : 0Tm 0Γ Nat → 0Tm 0Γ Nat
+
+  fze : ∀ {n} → 0Tm 0Γ (Fin (su n))
+  fsu : ∀ {n} → 0Tm 0Γ (Fin n) → 0Tm 0Γ (Fin (su n))
+  
 < t > = id , (t [ id ])
+
+⌜_⌝ : ℕ → 0Tm 0Γ Nat
+⌜ zero ⌝ = ze
+⌜ suc n ⌝ = su ⌜ n ⌝
+
+⌜_⌝𝔽 : ∀ {n} → 𝔽 n → 0Tm 0Γ (Fin ⌜ n ⌝)
+⌜ zero ⌝𝔽 = fze
+⌜ suc n ⌝𝔽 = fsu ⌜ n ⌝𝔽
+
+data Szs : 0Con → Set where
+  [] : Szs 0Γ
+  _∷_ : Sz 0Γ → Szs 0Γ → Szs 0Γ
+
+variable  
+  bs : Szs _
+
+data Tys : (0Γ : 0Con) → Szs 0Γ → Set where
+  [] : Tys 0Γ []
+  _∷_ : Ty 0Γ 0A b → Tys 0Γ bs → Tys 0Γ (b ∷ bs)
+
+variable  
+  As : Tys _ _
+
+len : ∀ {0Γ} → Szs 0Γ → ℕ
+len [] = zero
+len (x ∷ xs) = suc (len xs)
+
+_!_ : Tys 0Γ bs → 𝔽 (len bs) → 0Ty 0Γ 
+(_∷_ {0A = 0A} _ _) ! zero = 0A
+(_ ∷ As) ! (suc n) = As ! n
+  
+_!sz_ : Tys 0Γ bs → 𝔽 (len bs) → Sz 0Γ 
+(_∷_ {b = b} _ _) !sz zero = b
+(_ ∷ As) !sz (suc n) = As !sz n
+
+_!!_ : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (As !sz i)
+(A ∷ _) !! zero = A
+(_ ∷ As) !! (suc n) = As !! n
 
 data Sz where
   _[_] : Sz 0Δ → 0Sub 0Γ 0Δ → Sz 0Γ
-
   `0` : Sz 0Γ
   ptr : Sz 0Γ
   idx : Sz 0Γ
   _+_ : Sz 0Γ → Sz 0Γ → Sz 0Γ
   _⨾_ : (A : Ty 0Γ 0A b) → Sz (0Γ , 0A) → Sz 0Γ
+  _#_ : (n : Szs 0Γ) → 0Tm 0Γ (Fin ⌜ len n ⌝) → Sz 0Γ
 
 -- Skeleton of Sz
 data By : Set where
   `0` : By 
   ptr : By 
   idx : By 
+  max : By → By → By
   _+_ : By → By → By
   
 by : Sz 0Γ → By
@@ -84,6 +133,11 @@ by ptr = ptr
 by idx = idx
 by (b + b') = by b + by b'
 by (_⨾_ {b = b} _ b') = by b + by b'
+by (xs # _) = maxBys xs
+  where
+    maxBys : Szs 0Γ → By
+    maxBys [] = `0`
+    maxBys (x ∷ xs) = max (by x) (maxBys xs)
 
 data Con where
   ∙ : Con ∙
@@ -104,6 +158,8 @@ data Ty where
   
   Σ : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B (b' [ p ]) → Ty 0Γ (Σ 0A 0B) (b + b')
   ΣD : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B b' → Ty 0Γ (Σ 0A 0B) (A ⨾ b')
+  
+  Fit : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (bs # ⌜ i ⌝𝔽)
   
 data Sub where
   id : Sub Γ Γ id
@@ -139,4 +195,6 @@ data Tm where
   
   pairD : Tm Γ A 0a → Tm Γ (B [ < 0a > ]) 0b → Tm Γ (ΣD A B) (pair 0a 0b)
   fstD : Tm Γ (ΣD A B) 0a → Tm Γ A (fst 0a)
-  sndD : Tm Γ (ΣD A B) 0b → Tm Γ (B [ < fst 0b > ]) (snd 0b)
+  sndD : Tm Γ (ΣD A B) 0b → Tm Γ (B [ < fst 0b > ]) (snd 0b) 
+  
+  fit : ∀ i {0a} → Tm Γ (As !! i) 0a → Tm Γ (Fit As i) 0a
