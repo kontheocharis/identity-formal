@@ -19,11 +19,15 @@ data _⊢_≈nf_⊢_ where
   rfl : Γ ⊢ n ≈nf Γ ⊢ n
   ne≈ : ∀ {e¬η e'¬η} → Γ ⊢ e ≈ne Γ' ⊢ e' → Γ ⊢ ne e e¬η ≈nf Γ' ⊢ ne e' e'¬η
   lam≈ : (Γ , A) ⊢ n ≈nf (Γ' , A') ⊢ n' → Γ ⊢ lam n ≈nf Γ' ⊢ lam n'
+  lam0≈ : (Γ ,0 A) ⊢ n ≈nf (Γ' ,0 A') ⊢ n' → Γ ⊢ lam0 n ≈nf Γ' ⊢ lam0 n'
 
 data _⊢_≈ne_⊢_ where
   rfl : Γ ⊢ e ≈ne Γ ⊢ e
   var≈ : Γ ⊢ v ≈var Γ' ⊢ v' → Γ ⊢ var v ≈ne Γ' ⊢ var v'
   app≈ : Γ ⊢ e ≈ne Γ' ⊢ e' → Γ ⊢ u ≈ne Γ' ⊢ u' → Γ ⊢ app e u ≈ne Γ' ⊢ app e' u'
+  
+  -- argument doesn't matter
+  app0≈ : Γ ⊢ e ≈ne Γ' ⊢ e' → Γ ⊢ app0 e 0u ≈ne Γ' ⊢ app0 e' 0u'
 
 _⊢_≈var?_⊢_ : ∀ Γ → {A : Ty Γ} → (n : Var Γ A)
   → ∀ Γ' → {A' : Ty Γ'} → (n' : Var Γ' A')

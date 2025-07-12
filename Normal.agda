@@ -15,9 +15,9 @@ variable
   n n' m m' : Nf _ _
   0n 0n' 0m 0m' : 0Nf _ _
   e e' u u' : Ne _ _
-  0e 0e' 0u 0u' : Ne _ _
+  0e 0e' 0u 0u' : 0Ne _ _
   v v' : Var _ _
-  0v 0v' : Var _ _
+  0v 0v' : 0Var _ _
 
 ⌜_⌝var : Var Γ A → Tm Γ A
 ⌜_⌝0var : 0Var Γ A → 0Tm Γ A
