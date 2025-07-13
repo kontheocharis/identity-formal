@@ -1,9 +1,23 @@
-{-# OPTIONS --cubical #-}
 module DispIrrelevance where
 
-open import Cubical.Foundations.Prelude
-  using (_≡_; isSet; transport; cong; sym)
-  renaming (_∙_ to _■_)
+-- Definition of a CWF with irrelevant binders in Agda, in the style of QTT.
+----------------------------------------------------------------------------
+
+-- The CWF formulation of quantitative type theory (Atkey 2018) is basically a
+-- base CWF B, a resourced CWF-like thing E, and a functor U : E → B that
+-- preserves everything.
+--
+-- It is really annoying to define this directly as two syntaxes and a functor
+-- between them because we need tons of coherence conditions for U. Instead, we
+-- can define a base CWF B, and a displayed CWF E over B. We can recover the
+-- usual functorial formulation by taking the total space of E.
+--
+-- The presented syntax below is basically QTT with the {0, ω} semiring. This
+-- can be generalised to an arbitrary semiring if the context rules are modified
+-- appropriately.
+--
+-- All equations CWF are omitted for brevity but can be added either as separate
+-- relations or HIT equality constructors.
 
 -- Base CWF sorts
 data 0Con : Set
@@ -25,92 +39,39 @@ variable
   0σ 0σ' 0σ'' : 0Sub _ _
   σ σ' σ'' : Sub _ _ _
 
--- Base CWF constructors and equations
-0coe : A ≡ B → 0Tm 0Γ A → 0Tm 0Γ B
-
 data 0Con where
   ∙ : 0Con
   _,_ : ∀ 0Γ → Ty 0Γ → 0Con
-
-_[_]T : Ty 0Δ → 0Sub 0Γ 0Δ → Ty 0Γ
-_[_]0t : 0Tm 0Δ A → (0σ : 0Sub 0Γ 0Δ) → 0Tm 0Γ (A [ 0σ ]T)
-
-id' : 0Sub 0Γ 0Γ
-_∘'_ : 0Sub 0Γ 0Γ' → 0Sub 0Δ 0Γ → 0Sub 0Δ 0Γ'
-[∘]' : (A [ 0σ ]T) [ 0σ' ]T ≡ A [ 0σ ∘' 0σ' ]T
-p' : 0Sub (0Γ , A) 0Γ
-q' : 0Tm (0Γ , A) (A [ p' ]T)
-  
-data 0Sub where
-  0Sub-isSet : isSet (0Sub 0Δ 0Γ)
-
-  id : 0Sub 0Γ 0Γ
-  _∘_ : 0Sub 0Γ 0Γ' → 0Sub 0Δ 0Γ → 0Sub 0Δ 0Γ'
-  ∘assoc : 0σ ∘ (0σ' ∘ 0σ'') ≡ (0σ ∘ 0σ') ∘ 0σ''
-  ∘id : 0σ ∘ id ≡ 0σ
-  id∘ : id ∘ 0σ ≡ 0σ
-
-  p : 0Sub (0Γ , A) 0Γ
-  _,_ : (0σ : 0Sub 0Γ 0Δ) → 0Tm 0Γ (A [ 0σ ]T) → 0Sub 0Γ (0Δ , A)
-  ,∘ : (0σ , 0a) ∘ 0σ' ≡ ((0σ ∘' 0σ') , (0coe [∘]' (0a [ 0σ' ]0t)))
-  p∘, : p ∘ (0σ , 0a) ≡ 0σ
-  p,q : (p' {A = A} , q') ≡ id
-
-  ε : 0Sub 0Γ ∙
-  ε∘ : ε ∘ 0σ ≡ ε
-  id-ε : id ≡ ε
-  
-↑0 : (0σ : 0Sub 0Γ 0Δ) → 0Sub (0Γ , (A [ 0σ ]T)) (0Δ , A)
-↑0 0σ = (0σ ∘' p') , 0coe [∘]' q'
-
-id' = id
-_∘'_ = _∘_
-p' = p
   
 data Ty where
-  Ty-isSet : isSet (Ty 0Γ)
-
   _[_] : Ty 0Δ → 0Sub 0Γ 0Δ → Ty 0Γ
-  [id] : A [ id ]T ≡ A
-  [∘] : A [ 0σ ]T [ 0σ' ]T ≡ A [ 0σ ∘ 0σ' ]T
 
   U : Ty 0Γ
-  U[] : U [ 0σ ]T ≡ U
-
   El : 0Tm 0Γ U → Ty 0Γ
-  El[] : (El 0a) [ 0σ ]T ≡ El (0coe U[] (0a [ 0σ ]0t))
 
   Π : (A : Ty 0Γ) → Ty (0Γ , A) → Ty 0Γ
-  Π[] : (Π A B) [ 0σ ]T ≡ Π (A [ 0σ ]T) (B [ ↑0 0σ ]T)
-
   Π0 : (A : Ty 0Γ) → Ty (0Γ , A) → Ty 0Γ
-  Π0[] : (Π0 A B) [ 0σ ]T ≡ Π0 (A [ 0σ ]T) (B [ ↑0 0σ ]T)
   
-_[_]T = _[_]
-[∘]' = [∘]
+data 0Sub where
+  id : 0Sub 0Γ 0Γ
+  _∘_ : 0Sub 0Γ 0Γ' → 0Sub 0Δ 0Γ → 0Sub 0Δ 0Γ'
 
+  p : 0Sub (0Γ , A) 0Γ
+  _,_ : (0σ : 0Sub 0Γ 0Δ) → 0Tm 0Γ (A [ 0σ ]) → 0Sub 0Γ (0Δ , A)
+
+  ε : 0Sub 0Γ ∙
+  
 data 0Tm where
-  0Tm-isSet : isSet (0Tm 0Γ A)
-
   _[_] : 0Tm 0Δ A → (0σ : 0Sub 0Γ 0Δ) → 0Tm 0Γ (A [ 0σ ])
-  [id] : 0coe [id] (0a [ id ]0t) ≡ 0a
-  [∘] : 0coe [∘] (0a [ 0σ ]0t [ 0σ' ]0t) ≡ 0a [ 0σ ∘ 0σ' ]0t
-
   q : 0Tm (0Γ , A) (A [ p ])
-  q[,] : 0coe ([∘] ■ λ i → A [ p∘, {0a = 0a} i ]) (q {A = A} [ 0σ , 0a ]) ≡ 0a
-  
+
   lam : 0Tm (0Γ , A) B → 0Tm 0Γ (Π A B)
   app : 0Tm 0Γ (Π A B) → 0Tm (0Γ , A) B 
-  lam[] : 0coe Π[] ((lam 0a) [ 0σ ]) ≡ lam (0a [ ↑0 0σ ])
-  
+
   lam0 : 0Tm (0Γ , A) B → 0Tm 0Γ (Π0 A B)
-  lam0[] : 0coe Π0[] ((lam0 0a) [ 0σ ]) ≡ lam0 (0a [ ↑0 0σ ])
   app0 : 0Tm 0Γ (Π0 A B) → 0Tm (0Γ , A) B 
   
-_[_]0t = _[_]
-q' = q
-
--- Displayed CWF constructors and equations
+-- Displayed CWF constructors
 
 data Con where
   ∙ : Con ∙
@@ -141,6 +102,9 @@ data Tm where
   
   
 -- Resourced CWF:
+
+-- The formulation of QTT requires U to be a faithful functor but this is
+-- not really necessary in general. We can even have different types above and below.
 
 record RCon : Set where
   constructor _×_
