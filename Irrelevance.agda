@@ -3,6 +3,8 @@ module Irrelevance where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 
+-- A failed experiment
+
 data Con : Set
 data Ty : Con → Set
 data Sub : Con → Con → Set
