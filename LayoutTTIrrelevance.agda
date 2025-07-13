@@ -118,13 +118,18 @@ data Con where
 ↑ ∙ = ∙ 
 ↑ (Γ , A) = (↑ Γ) ,0 A
 
+idx' : Sz 0Γ
+Fin' : (n : 0Tm 0Γ Nat) → Ty 0Γ (Fin n) idx'
+
 data Sz where
   _[_] : Sz 0Δ → 0Sub 0Γ 0Δ → Sz 0Γ
   `0` : Sz 0Γ
   ptr : Sz 0Γ
   idx : Sz 0Γ
   _+_ : Sz 0Γ → Sz 0Γ → Sz 0Γ
-  _⨾_ : (A : Ty 0Γ 0A b) → (n : Szs (0Γ , 0A)) → Tm ((↑ 0Γ) , A) ({!   !} ⌜ len n ⌝) 0a → Sz 0Γ
+  _⨾_ : (A : Ty 0Γ 0A b) → (n : Szs (0Γ , 0A)) → ∀ {0a} → Tm ((↑ 0Γ) , A) (Fin' ⌜ len n ⌝) 0a → Sz 0Γ
+  
+idx' = idx
 
 -- Skeleton of Sz
 data By : Set where
@@ -158,10 +163,17 @@ data Ty where
   Π> : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B b' → Ty 0Γ (Π 0A 0B) idx
   Π0 : (0A : 0Ty 0Γ) → ∀ {0B} → Ty (0Γ , 0A) 0B (b' [ p ]) → Ty 0Γ (Π 0A 0B) b'
   
+  Fin : (n : 0Tm 0Γ Nat) → Ty 0Γ (Fin n) idx
+
   Σ : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B (b' [ p ]) → Ty 0Γ (Σ 0A 0B) (b + b')
-  -- ΣD : (A : Ty 0Γ 0A b) → Ty (0Γ , 0A) 0B b' → Ty 0Γ (Σ 0A 0B) (A ⨾ b')
+  -- Σ⨄ : (A : Ty 0Γ 0A b)
+  --   → Tm ((↑ 0Γ) , A) (Fin' ⌜ len n ⌝) 0a
+  --   → Ty (0Γ , 0A) 0B b'
+  --   → Ty 0Γ (Σ 0A 0B) (A ⨾ b')
   
   -- Fit : (As : Tys 0Γ bs) → (i : 𝔽 (len bs)) → Ty 0Γ (As ! i) (bs # ⌜ i ⌝𝔽)
+
+Fin' = Fin
   
 data Sub where
   id : Sub Γ Γ id
