@@ -1,6 +1,6 @@
 module Syntax where
 
--- Base CWF sorts are the 'realisers', i.e. computational content
+-- Computational CWF sorts are the 'realisers', i.e. computational content
 -- this is just untyped LC
 data CCon : Set
 data CSub : CCon → CCon → Set
@@ -20,7 +20,7 @@ variable
   Iσ Iσ' Iσ'' : ISub _ _
   Cσ Cσ' Cσ'' : CSub _ _
 
--- Displayed CWF sorts
+-- Displayed CWF sorts are indexed over computational and logical content.
 data Con : ICon → CCon → Set
 data Sub : ∀ {IΓ IΔ CΓ CΔ} → Con IΓ CΓ → Con IΔ CΔ → ISub IΓ IΔ → CSub CΓ CΔ → Set
 data Tm : ∀ {IΓ CΓ} → (Γ : Con IΓ CΓ) → (A : Ty IΓ) → ITm IΓ A → CTm CΓ → Set
@@ -63,6 +63,8 @@ data Ty where
   U : Ty IΓ
   El : ITm IΓ U → Ty IΓ
   Π : (A : Ty IΓ) → Ty (IΓ , A) → Ty IΓ
+  Π0 : (A : Ty IΓ) → Ty (IΓ , A) → Ty IΓ
+  Π-ID : (A : Ty IΓ) → Ty (IΓ , A) → Ty IΓ
   
 data ISub where
   id : ISub IΓ IΓ
@@ -74,14 +76,22 @@ data ISub where
 data ITm where
   _[_] : ITm IΔ A → (Iσ : ISub IΓ IΔ) → ITm IΓ (A [ Iσ ]) 
   q : ITm (IΓ , A) (A [ p ])
+
   lam : ITm (IΓ , A) B → ITm IΓ (Π A B)
   app : ITm IΓ (Π A B) → ITm (IΓ , A) B
+
+  lam0 : ITm (IΓ , A) B → ITm IΓ (Π0 A B)
+  app0 : ITm IΓ (Π0 A B) → ITm (IΓ , A) B
+
+  lam-ID : ITm (IΓ , A) B → ITm IΓ (Π-ID A B)
+  app-ID : ITm IΓ (Π-ID A B) → ITm (IΓ , A) B
   
 -- Displayed CWF constructors
 
 data Con where
   ∙ : Con ∙ ∙
   _,_ : (Γ : Con IΓ CΓ) → (A : Ty IΓ) → Con (IΓ , A) (CΓ ,)
+  _,I_ : (Γ : Con IΓ CΓ) → (A : Ty IΓ) → Con (IΓ , A) CΓ
   
 data Sub where
   id : Sub Γ Γ id id
@@ -90,6 +100,9 @@ data Sub where
   
   p : Sub (Γ , A) Γ p p
   _,_ : Sub Γ Δ Iσ Cσ → Tm Γ (A [ Iσ ]) Ia Ca → Sub Γ (Δ , A) (Iσ , Ia) (Cσ , Ca)
+  
+  pI : Sub (Γ ,I A) Γ p id
+  _,I_ : Sub Γ Δ Iσ Cσ → (Ia : ITm IΓ (A [ Iσ ])) → Sub Γ (Δ ,I A) (Iσ , Ia) Cσ
 
 data Tm where
   _[_] : Tm Δ A Ia Ca → Sub Γ Δ Iσ Cσ → Tm Γ (A [ Iσ ]) (Ia [ Iσ ]) (Ca [ Cσ ])
@@ -97,8 +110,9 @@ data Tm where
   
   lam : Tm (Γ , A) B Ia Ca → Tm Γ (Π A B) (lam Ia) (lam Ca)
   app : Tm Γ (Π A B) Ia Ca → Tm (Γ , A) B (app Ia) (app Ca)
-  
-  -- same : (a : Tm Γ A Ca) → (b : Tm Γ B Ca) → Tm Γ (a ≈ b) Ca
 
-  -- lam≈ : (f : Tm (Γ , A) B Ca) → Tm (Γ , A) (q ≈ f) Ca → Tm Γ (Π≈ A B) (lam q)
-  -- app≈ : Tm Γ (Π A B) Ca → Tm (Γ , A) B (app Ca)
+  lam0 : Tm (Γ ,I A) B Ia Ca → Tm Γ (Π0 A B) (lam0 Ia) Ca
+  app0 : Tm Γ (Π0 A B) Ia Ca → Tm (Γ ,I A) B (app0 Ia) Ca
+
+  lam-ID : Tm (Γ , A) B Ia q → Tm Γ (Π-ID A B) (lam-ID Ia) (lam q)
+  app-ID : Tm Γ (Π-ID A B) Ia Ca → Tm (Γ , A) B (app-ID Ia) q
