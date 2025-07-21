@@ -1,4 +1,10 @@
+{-# OPTIONS --cubical #-}
 module Syntax where
+
+open import Cubical.Core.Primitives using (_≡_)
+import Cubical.Core.Glue 
+
+-- CONSTRUCTORS
 
 -- Computational CWF sorts are the 'realisers', i.e. computational content
 -- this is just untyped LC
@@ -37,20 +43,36 @@ data CCon where
   ∙ : CCon
   _, : CCon → CCon
   
+Cq' : CTm (CΓ ,)
+_[_]C' : CTm CΔ → (Cσ : CSub CΓ CΔ) → CTm CΓ
+
 data CSub where
   id : CSub CΓ CΓ
   _∘_ : CSub CΓ CΓ' → CSub CΔ CΓ → CSub CΔ CΓ'
+  id∘ : id ∘ Cσ ≡ Cσ
+  ∘id : Cσ ∘ id ≡ Cσ
+  ∘assoc : (Cσ ∘ Cσ') ∘ Cσ'' ≡ Cσ ∘ (Cσ' ∘ Cσ'')
 
   p : CSub (CΓ ,) CΓ
   _,_ : (Cσ : CSub CΓ CΔ) → CTm CΓ → CSub CΓ (CΔ ,)
+  p∘, : p ∘ (Cσ , Ca) ≡ Cσ
+  p,q : (p {CΓ} , Cq') ≡ id
+  ,∘ : (Cσ , Ca) ∘ Cσ' ≡ ((Cσ ∘ Cσ') , (Ca [ Cσ' ]C'))
 
   ε : CSub CΓ ∙
+  εη : Cσ ≡ ε
   
 data CTm where
   _[_] : CTm CΔ → (Cσ : CSub CΓ CΔ) → CTm CΓ
   q : CTm (CΓ ,)
   lam : CTm (CΓ ,) → CTm CΓ
   app : CTm CΓ → CTm (CΓ ,)
+  
+  [id] : Ca [ id ]C' ≡ Ca
+  [∘] : Ca [ Cσ ∘ Cσ' ]C' ≡ (Ca [ Cσ ]C') [ Cσ ]C'
+  q[,] : q [ Cσ , Ca ]C' ≡ Ca
+  
+  lam[] : (lam Ca) [ Cσ ]C' ≡ lam ({!   !})
 
 -- Irr
 
@@ -116,3 +138,7 @@ data Tm where
 
   lam-ID : Tm (Γ , A) B Ia q → Tm Γ (Π-ID A B) (lam-ID Ia) (lam q)
   app-ID : Tm Γ (Π-ID A B) Ia Ca → Tm (Γ , A) B (app-ID Ia) q
+
+-- EQUATIONS
+
+
