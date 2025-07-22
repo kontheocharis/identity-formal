@@ -24,7 +24,7 @@ module InSorts (sorts : Sorts) where
   record Ctors : Set1 where
     field 
       ∙ : CCon
-      _, : CCon → CCon
+      _▷ : CCon → CCon
 
       id : CSub CΓ CΓ
       _∘_ : CSub CΓ CΓ' → CSub CΔ CΓ → CSub CΔ CΓ'
@@ -35,20 +35,20 @@ module InSorts (sorts : Sorts) where
       ε : CSub CΓ ∙
       εη : Cσ ≡ ε
       
-      p : CSub (CΓ ,) CΓ
-      q : CTm (CΓ ,)
+      p : CSub (CΓ ▷) CΓ
       _[_] : CTm CΔ → (Cσ : CSub CΓ CΔ) → CTm CΓ
-      _,_ : (Cσ : CSub CΓ CΔ) → CTm CΓ → CSub CΓ (CΔ ,)
+      q : CTm (CΓ ▷)
+      _,_ : (Cσ : CSub CΓ CΔ) → CTm CΓ → CSub CΓ (CΔ ▷)
       p∘, : p ∘ (Cσ , Ca) ≡ Cσ
       p,q : (p {CΓ} , q) ≡ id
       ,∘ : (Cσ , Ca) ∘ Cσ' ≡ ((Cσ ∘ Cσ') , (Ca [ Cσ' ]))
 
-    _⁺ : CSub CΓ CΔ → CSub (CΓ ,) (CΔ ,)
+    _⁺ : CSub CΓ CΔ → CSub (CΓ ▷) (CΔ ▷)
     _⁺ Cσ = (Cσ ∘ p) , q 
     
     field
-      lam : CTm (CΓ ,) → CTm CΓ
-      app : CTm CΓ → CTm (CΓ ,)
+      lam : CTm (CΓ ▷) → CTm CΓ
+      app : CTm CΓ → CTm (CΓ ▷)
 
       [id] : Ca [ id ] ≡ Ca
       [∘] : Ca [ Cσ ∘ Cσ' ] ≡ (Ca [ Cσ ]) [ Cσ' ]
@@ -101,7 +101,7 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
     record Ctorsᴰ : Set1 where
       field 
         ∙ᴰ : CConᴰ ∙
-        _,ᴰ : CConᴰ CΓ → CConᴰ (CΓ ,)
+        _▷ᴰ : CConᴰ CΓ → CConᴰ (CΓ ▷)
 
         idᴰ : CSubᴰ CΓᴰ CΓᴰ id
         _∘ᴰ_ : CSubᴰ CΓᴰ CΓᴰ' Cσ → CSubᴰ CΔᴰ CΓᴰ Cσ' → CSubᴰ CΔᴰ CΓᴰ' (Cσ ∘ Cσ')
@@ -112,20 +112,20 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
         εᴰ : CSubᴰ CΓᴰ ∙ᴰ ε
         εηᴰ : Cσᴰ ≡[ εη ]CSub εᴰ
         
-        pᴰ : CSubᴰ (CΓᴰ ,ᴰ) CΓᴰ p
-        qᴰ : CTmᴰ (CΓᴰ ,ᴰ) q
+        pᴰ : CSubᴰ (CΓᴰ ▷ᴰ) CΓᴰ p
         _[_]ᴰ : CTmᴰ CΔᴰ Ca → (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ (Ca [ Cσ ])
-        _,ᴰ_ : (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ Ca → CSubᴰ CΓᴰ (CΔᴰ ,ᴰ) (Cσ , Ca)
+        qᴰ : CTmᴰ (CΓᴰ ▷ᴰ) q
+        _,ᴰ_ : (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ Ca → CSubᴰ CΓᴰ (CΔᴰ ▷ᴰ) (Cσ , Ca)
         p∘,ᴰ : pᴰ ∘ᴰ (Cσᴰ ,ᴰ Caᴰ) ≡[ p∘, ]CSub Cσᴰ
         p,qᴰ : (pᴰ {CΓᴰ = CΓᴰ} ,ᴰ qᴰ) ≡[ p,q ]CSub idᴰ
         ,∘ᴰ : (Cσᴰ ,ᴰ Caᴰ) ∘ᴰ Cσᴰ' ≡[ ,∘ ]CSub ((Cσᴰ ∘ᴰ Cσᴰ') ,ᴰ (Caᴰ [ Cσᴰ' ]ᴰ))
 
-      _⁺ᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ → CSubᴰ (CΓᴰ ,ᴰ) (CΔᴰ ,ᴰ) (Cσ ⁺)
+      _⁺ᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ → CSubᴰ (CΓᴰ ▷ᴰ) (CΔᴰ ▷ᴰ) (Cσ ⁺)
       _⁺ᴰ Cσᴰ = (Cσᴰ ∘ᴰ pᴰ) ,ᴰ qᴰ 
     
       field
-        lamᴰ : CTmᴰ (CΓᴰ ,ᴰ) Ca → CTmᴰ CΓᴰ (lam Ca)
-        appᴰ : CTmᴰ CΓᴰ Ca → CTmᴰ (CΓᴰ ,ᴰ) (app Ca)
+        lamᴰ : CTmᴰ (CΓᴰ ▷ᴰ) Ca → CTmᴰ CΓᴰ (lam Ca)
+        appᴰ : CTmᴰ CΓᴰ Ca → CTmᴰ (CΓᴰ ▷ᴰ) (app Ca)
 
         [id]ᴰ : Caᴰ [ idᴰ ]ᴰ ≡[ [id] ]CTm Caᴰ
         [∘]ᴰ : Caᴰ [ Cσᴰ ∘ᴰ Cσᴰ' ]ᴰ ≡[ [∘] ]CTm (Caᴰ [ Cσᴰ ]ᴰ) [ Cσᴰ ]ᴰ
@@ -166,7 +166,7 @@ module Ind (mᴰ : Modelᴰ syn) where
     ∃!∙ : ∃!Con ∙ ≡ ∙ᴰ
     {-# REWRITE ∃!∙ #-}
 
-    ∃!, : ∃!Con (CΓ ,) ≡ (∃!Con CΓ) ,ᴰ
+    ∃!, : ∃!Con (CΓ ▷) ≡ (∃!Con CΓ) ▷ᴰ
     {-# REWRITE ∃!, #-}
 
     ∃!id : ∃!Sub {CΓ} id ≡ idᴰ
@@ -181,11 +181,11 @@ module Ind (mᴰ : Modelᴰ syn) where
     ∃!p : ∃!Sub (p {CΓ}) ≡ pᴰ
     {-# REWRITE ∃!p #-}
 
-    ∃!q : ∃!Tm (q {CΓ}) ≡ qᴰ
-    {-# REWRITE ∃!q #-}
-
     ∃![] : ∃!Tm (Ca [ Cσ ]) ≡ (∃!Tm Ca) [ ∃!Sub Cσ ]ᴰ
     {-# REWRITE ∃![] #-}
+
+    ∃!q : ∃!Tm (q {CΓ}) ≡ qᴰ
+    {-# REWRITE ∃!q #-}
 
     ∃!lam : ∃!Tm (lam Ca) ≡ lamᴰ (∃!Tm Ca)
     {-# REWRITE ∃!lam #-}
