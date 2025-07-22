@@ -51,7 +51,7 @@ module InSorts (sorts : Sorts) where
       app : CTm CΓ → CTm (CΓ ,)
 
       [id] : Ca [ id ] ≡ Ca
-      [∘] : Ca [ Cσ ∘ Cσ' ] ≡ (Ca [ Cσ ]) [ Cσ ]
+      [∘] : Ca [ Cσ ∘ Cσ' ] ≡ (Ca [ Cσ ]) [ Cσ' ]
       q[,] : q [ Cσ , Ca ] ≡ Ca
       
       lam[] : (lam Ca) [ Cσ ] ≡ lam (Ca [ Cσ ⁺ ])
@@ -62,9 +62,11 @@ module InSorts (sorts : Sorts) where
 record Model : Set1 where
   field
     s : Sorts
-  open InSorts s
+  open Sorts s public
+  open InSorts s public
   field
     c : Ctors
+  open Ctors c public
   
       
 -- Displayed model
@@ -98,55 +100,69 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
     
     record Ctorsᴰ : Set1 where
       field 
-        ∙ : CConᴰ ∙
-        _, : CConᴰ CΓ → CConᴰ (CΓ ,)
+        ∙ᴰ : CConᴰ ∙
+        _,ᴰ : CConᴰ CΓ → CConᴰ (CΓ ,)
 
-        id : CSubᴰ CΓᴰ CΓᴰ id
-        _∘_ : CSubᴰ CΓᴰ CΓᴰ' Cσ → CSubᴰ CΔᴰ CΓᴰ Cσ' → CSubᴰ CΔᴰ CΓᴰ' (Cσ ∘ Cσ')
-        id∘ : id ∘ Cσᴰ ≡[ id∘ ]CSub Cσᴰ
-        ∘id : Cσᴰ ∘ id ≡[ ∘id ]CSub Cσᴰ
-        ∘assoc : (Cσᴰ ∘ Cσᴰ') ∘ Cσᴰ'' ≡[ ∘assoc ]CSub Cσᴰ ∘ (Cσᴰ' ∘ Cσᴰ'')
+        idᴰ : CSubᴰ CΓᴰ CΓᴰ id
+        _∘ᴰ_ : CSubᴰ CΓᴰ CΓᴰ' Cσ → CSubᴰ CΔᴰ CΓᴰ Cσ' → CSubᴰ CΔᴰ CΓᴰ' (Cσ ∘ Cσ')
+        id∘ᴰ : idᴰ ∘ᴰ Cσᴰ ≡[ id∘ ]CSub Cσᴰ
+        ∘idᴰ : Cσᴰ ∘ᴰ idᴰ ≡[ ∘id ]CSub Cσᴰ
+        ∘assocᴰ : (Cσᴰ ∘ᴰ Cσᴰ') ∘ᴰ Cσᴰ'' ≡[ ∘assoc ]CSub Cσᴰ ∘ᴰ (Cσᴰ' ∘ᴰ Cσᴰ'')
 
-        ε : CSubᴰ CΓᴰ ∙ ε
-        εη : Cσᴰ ≡[ εη ]CSub ε
+        εᴰ : CSubᴰ CΓᴰ ∙ᴰ ε
+        εηᴰ : Cσᴰ ≡[ εη ]CSub εᴰ
         
-        p : CSubᴰ (CΓᴰ ,) CΓᴰ p
-        q : CTmᴰ (CΓᴰ ,) q
-        _[_] : CTmᴰ CΔᴰ Ca → (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ (Ca [ Cσ ])
-        _,_ : (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ Ca → CSubᴰ CΓᴰ (CΔᴰ ,) (Cσ , Ca)
-        p∘, : p ∘ (Cσᴰ , Caᴰ) ≡[ p∘, ]CSub Cσᴰ
-        p,q : (p {CΓᴰ = CΓᴰ} , q) ≡[ p,q ]CSub id
-        ,∘ : (Cσᴰ , Caᴰ) ∘ Cσᴰ' ≡[ ,∘ ]CSub ((Cσᴰ ∘ Cσᴰ') , (Caᴰ [ Cσᴰ' ]))
+        pᴰ : CSubᴰ (CΓᴰ ,ᴰ) CΓᴰ p
+        qᴰ : CTmᴰ (CΓᴰ ,ᴰ) q
+        _[_]ᴰ : CTmᴰ CΔᴰ Ca → (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ (Ca [ Cσ ])
+        _,ᴰ_ : (Cσᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ) → CTmᴰ CΓᴰ Ca → CSubᴰ CΓᴰ (CΔᴰ ,ᴰ) (Cσ , Ca)
+        p∘,ᴰ : pᴰ ∘ᴰ (Cσᴰ ,ᴰ Caᴰ) ≡[ p∘, ]CSub Cσᴰ
+        p,qᴰ : (pᴰ {CΓᴰ = CΓᴰ} ,ᴰ qᴰ) ≡[ p,q ]CSub idᴰ
+        ,∘ᴰ : (Cσᴰ ,ᴰ Caᴰ) ∘ᴰ Cσᴰ' ≡[ ,∘ ]CSub ((Cσᴰ ∘ᴰ Cσᴰ') ,ᴰ (Caᴰ [ Cσᴰ' ]ᴰ))
 
-        lam : CTmᴰ (CΓᴰ ,) Ca → CTmᴰ CΓᴰ (lam Ca)
-        app : CTmᴰ CΓᴰ Ca → CTmᴰ (CΓᴰ ,) (app Ca)
+      _⁺ᴰ : CSubᴰ CΓᴰ CΔᴰ Cσ → CSubᴰ (CΓᴰ ,ᴰ) (CΔᴰ ,ᴰ) (Cσ ⁺)
+      _⁺ᴰ Cσᴰ = (Cσᴰ ∘ᴰ pᴰ) ,ᴰ qᴰ 
+    
+      field
+        lamᴰ : CTmᴰ (CΓᴰ ,ᴰ) Ca → CTmᴰ CΓᴰ (lam Ca)
+        appᴰ : CTmᴰ CΓᴰ Ca → CTmᴰ (CΓᴰ ,ᴰ) (app Ca)
 
-        [id] : Caᴰ [ id ] ≡[ [id] ]CTm Caᴰ
-        -- [∘] : Ca [ Cσ ∘ Cσ' ] ≡ (Ca [ Cσ ]) [ Cσ ]
-        -- q[,] : q [ Cσ , Ca ] ≡ Ca
+        [id]ᴰ : Caᴰ [ idᴰ ]ᴰ ≡[ [id] ]CTm Caᴰ
+        [∘]ᴰ : Caᴰ [ Cσᴰ ∘ᴰ Cσᴰ' ]ᴰ ≡[ [∘] ]CTm (Caᴰ [ Cσᴰ ]ᴰ) [ Cσᴰ ]ᴰ
+        q[,]ᴰ : qᴰ [ Cσᴰ ,ᴰ Caᴰ ]ᴰ ≡[ q[,] ]CTm Caᴰ
       
-        -- lam[] : (lam Ca) [ Cσ ] ≡ lam (Ca [ Cσ ⁺ ])
+        lam[]ᴰ : (lamᴰ Caᴰ) [ Cσᴰ ]ᴰ ≡[ lam[] ]CTm lamᴰ (Caᴰ [ Cσᴰ ⁺ᴰ ]ᴰ)
 
-        -- Πη : lam (app Ca) ≡ Ca 
-        -- Πβ : app (lam Ca) ≡ Ca
+        Πηᴰ : lamᴰ (appᴰ Caᴰ) ≡[ Πη ]CTm Caᴰ
+        Πβᴰ : appᴰ (lamᴰ Caᴰ) ≡[ Πβ ]CTm Caᴰ
       
 record Modelᴰ (m : Model) : Set1 where
   open Model m
   field
     sᴰ : Sortsᴰ s c
-  open InSorts s
+  open Sortsᴰ sᴰ public 
+  open InSortsᴰ s c sᴰ public 
   field
     cᴰ : InSortsᴰ.Ctorsᴰ s c sᴰ
+  open InSortsᴰ.Ctorsᴰ cᴰ public
         
-        
--- Should be postulates
-record Section {m} (mᴰ : Modelᴰ m) : Set1 where
-  open Model m
-  open Modelᴰ mᴰ
-
-
--- Syntax
 
 postulate
   syn : Model
-  elim : (m : Modelᴰ syn) → Section m
+        
+-- Should be postulates
+module Ind (mᴰ : Modelᴰ syn) where
+  open Model syn
+  open Modelᴰ
+
+  postulate
+    ∃!Con : (CΓ : CCon) → mᴰ .CConᴰ CΓ
+    ∃!Sub : (Cσ : CSub CΓ CΔ) → mᴰ .CSubᴰ (∃!Con CΓ) (∃!Con CΔ) Cσ
+    ∃!Tm : (Ca : CTm CΓ) → mᴰ .CTmᴰ (∃!Con CΓ) Ca
+    
+    -- ∃!∙ : ∃!Con ? ≡ mᴰ .∙
+    -- _∃!, : ∃!Con (CΓ ,) ≡ (∃!Con CΓ) ,
+    -- ∃!id : ∃!Con id ≡ id
+
+
+-- Syntax
