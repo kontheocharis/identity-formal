@@ -147,22 +147,48 @@ record Modelᴰ (m : Model) : Set1 where
   open InSortsᴰ.Ctorsᴰ cᴰ public
         
 
+-- Syntax
+
 postulate
   syn : Model
         
--- Should be postulates
+-- Induction
+
 module Ind (mᴰ : Modelᴰ syn) where
   open Model syn
-  open Modelᴰ
+  open Modelᴰ mᴰ
 
   postulate
-    ∃!Con : (CΓ : CCon) → mᴰ .CConᴰ CΓ
-    ∃!Sub : (Cσ : CSub CΓ CΔ) → mᴰ .CSubᴰ (∃!Con CΓ) (∃!Con CΔ) Cσ
-    ∃!Tm : (Ca : CTm CΓ) → mᴰ .CTmᴰ (∃!Con CΓ) Ca
+    ∃!Con : (CΓ : CCon) → CConᴰ CΓ
+    ∃!Sub : (Cσ : CSub CΓ CΔ) → CSubᴰ (∃!Con CΓ) (∃!Con CΔ) Cσ
+    ∃!Tm : (Ca : CTm CΓ) → CTmᴰ (∃!Con CΓ) Ca
     
-    -- ∃!∙ : ∃!Con ? ≡ mᴰ .∙
-    -- _∃!, : ∃!Con (CΓ ,) ≡ (∃!Con CΓ) ,
-    -- ∃!id : ∃!Con id ≡ id
+    ∃!∙ : ∃!Con ∙ ≡ ∙ᴰ
+    {-# REWRITE ∃!∙ #-}
 
+    ∃!, : ∃!Con (CΓ ,) ≡ (∃!Con CΓ) ,ᴰ
+    {-# REWRITE ∃!, #-}
 
--- Syntax
+    ∃!id : ∃!Sub {CΓ} id ≡ idᴰ
+    {-# REWRITE ∃!id #-}
+
+    ∃!∘ : ∃!Sub (Cσ ∘ Cσ') ≡ ∃!Sub Cσ ∘ᴰ ∃!Sub Cσ'  
+    {-# REWRITE ∃!∘ #-}
+
+    ∃!ε : ∃!Sub {CΓ} ε ≡ εᴰ
+    {-# REWRITE ∃!ε #-}
+
+    ∃!p : ∃!Sub (p {CΓ}) ≡ pᴰ
+    {-# REWRITE ∃!p #-}
+
+    ∃!q : ∃!Tm (q {CΓ}) ≡ qᴰ
+    {-# REWRITE ∃!q #-}
+
+    ∃![] : ∃!Tm (Ca [ Cσ ]) ≡ (∃!Tm Ca) [ ∃!Sub Cσ ]ᴰ
+    {-# REWRITE ∃![] #-}
+
+    ∃!lam : ∃!Tm (lam Ca) ≡ lamᴰ (∃!Tm Ca)
+    {-# REWRITE ∃!lam #-}
+
+    ∃!app : ∃!Tm (app Ca) ≡ appᴰ (∃!Tm Ca)
+    {-# REWRITE ∃!app #-}
