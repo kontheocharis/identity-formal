@@ -19,8 +19,14 @@ x ≡[ p ] y = coe p x ≡ y
 cong : ∀ {i j} {A : Set i} {B : Set j} (f : A → B) {a} {b} (p : a ≡ b) → f a ≡ f b
 cong f refl = refl
 
+cong2 : ∀ {i j k} {A : Set i} {B : Set j} {C : Set k} (f : A → B → C) {a b c d} (p : a ≡ c) (q : b ≡ d) → f a b ≡ f c d
+cong2 f refl refl = refl
+
 sym : ∀ {i} {A : Set i} {a b : A} → a ≡ b → b ≡ a
 sym refl = refl
+
+hsym : ∀ {i} {A : Set i} {a b : A} {p} → a ≡[ p ] b → b ≡[ sym p ] a
+hsym refl = refl
 
 trs :  ∀ {i} {A : Set i} {a b c : A} → a ≡ b → b ≡ c → a ≡ c
 trs refl refl = refl
