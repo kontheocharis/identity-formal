@@ -6,3 +6,4 @@ depend:
 flags:
   --prop
   --rewriting
+  -WnoUnsupportedIndexedMatch
