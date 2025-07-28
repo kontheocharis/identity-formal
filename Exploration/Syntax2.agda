@@ -44,27 +44,27 @@ module ICTT-InSorts (Sorts : ICTT-Sorts) where
       _, : CCon → CCon
       id : CSub CΓ CΓ
       _∘_ : CSub CΓ CΓ' → CSub CΔ CΓ → CSub CΔ CΓ'
-      id∘ : id ∘ Cσ ≡ Cσ
-      ∘id : Cσ ∘ id ≡ Cσ
-      ∘assoc : (Cσ ∘ Cσ') ∘ Cσ'' ≡ Cσ ∘ (Cσ' ∘ Cσ'')
+      id∘ : id ∘ Cσ ＝ Cσ
+      ∘id : Cσ ∘ id ＝ Cσ
+      ∘assoc : (Cσ ∘ Cσ') ∘ Cσ'' ＝ Cσ ∘ (Cσ' ∘ Cσ'')
 
       ε : CSub CΓ ∙
-      εη : Cσ ≡ ε
+      εη : Cσ ＝ ε
       
       p : CSub (CΓ ,) CΓ
       q : CTm (CΓ ,)
       _[_] : CTm CΔ → (Cσ : CSub CΓ CΔ) → CTm CΓ
       _,_ : (Cσ : CSub CΓ CΔ) → CTm CΓ → CSub CΓ (CΔ ,)
-      p∘, : p ∘ (Cσ , Ca) ≡ Cσ
-      p,q : (p {CΓ} , q) ≡ id
-      ,∘ : (Cσ , Ca) ∘ Cσ' ≡ ((Cσ ∘ Cσ') , (Ca [ Cσ' ]))
+      p∘, : p ∘ (Cσ , Ca) ＝ Cσ
+      p,q : (p {CΓ} , q) ＝ id
+      ,∘ : (Cσ , Ca) ∘ Cσ' ＝ ((Cσ ∘ Cσ') , (Ca [ Cσ' ]))
 
       lam : CTm (CΓ ,) → CTm CΓ
       app : CTm CΓ → CTm (CΓ ,)
 
-      [id] : Ca [ id ] ≡ Ca
-      [∘] : Ca [ Cσ ∘ Cσ' ] ≡ (Ca [ Cσ ]) [ Cσ ]
-      q[,] : q [ Cσ , Ca ] ≡ Ca
+      [id] : Ca [ id ] ＝ Ca
+      [∘] : Ca [ Cσ ∘ Cσ' ] ＝ (Ca [ Cσ ]) [ Cσ ]
+      q[,] : q [ Cσ , Ca ] ＝ Ca
 
       -- Logical
 

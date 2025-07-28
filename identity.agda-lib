@@ -1,0 +1,8 @@
+name: identity
+depend:
+  .
+  cubical
+  standard-library
+flags:
+  --prop
+  --rewriting

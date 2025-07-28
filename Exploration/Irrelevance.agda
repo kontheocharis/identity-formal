@@ -1,7 +1,7 @@
 {-# OPTIONS --rewriting #-}
 module Irrelevance where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.PropositionalEquality using (_＝_; refl; sym; trans; cong)
 
 -- A failed experiment
 
@@ -17,12 +17,12 @@ variable
   a a' b b' : Tm _ _
   σ σ' : Sub _ _
   
-{-# BUILTIN REWRITE _≡_ #-}
+{-# BUILTIN REWRITE _＝_ #-}
 
-coe : A ≡ B → Tm Γ A → Tm Γ B
+coe : A ＝ B → Tm Γ A → Tm Γ B
 coe refl a = a
 
-0coe : A ≡ B → 0Tm Γ A → 0Tm Γ B
+0coe : A ＝ B → 0Tm Γ A → 0Tm Γ B
 0coe refl a = a
 
 data Con where
@@ -71,14 +71,14 @@ data Tm where
   _[_] : Tm Δ A → (σ : Sub Γ Δ) → Tm Γ (A [ σ ])
   q : Tm (Γ , A) (A [ p ])
 
-[][] : (A [ σ ]) [ σ' ] ≡ A [ σ ∘ σ' ]
+[][] : (A [ σ ]) [ σ' ] ＝ A [ σ ∘ σ' ]
 {-# REWRITE [][] #-}
 
 postulate
-  $0p : p ≡ p0 {A = A} ∘ $0
+  $0p : p ＝ p0 {A = A} ∘ $0
   {-# REWRITE $0p #-}
 
-  ∣q∣ : ∣ q {A = A} ∣ ≡ q0 {A = A} [ $0 ]
+  ∣q∣ : ∣ q {A = A} ∣ ＝ q0 {A = A} [ $0 ]
   {-# REWRITE ∣q∣ #-}
 
 ∅ : Sub Γ (`0` Γ)
@@ -88,8 +88,8 @@ postulate
   
 postulate
   -- Ty Γ ≃ Ty (`0` Γ)
-  ₀[∅] : (A ₀T) [ ∅ ] ≡ A
-  [∅]₀ : (A [ ∅ ]) ₀T ≡ A
+  ₀[∅] : (A ₀T) [ ∅ ] ＝ A
+  [∅]₀ : (A [ ∅ ]) ₀T ＝ A
 
 0$ : Sub (Γ ,0 A) ((`0` Γ) ,0 (A ₀T))
 0$ = ∅

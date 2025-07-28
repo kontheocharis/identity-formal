@@ -1,7 +1,7 @@
 module Normal where
 
 open import Syntax
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.PropositionalEquality using (_＝_; refl; sym; trans; cong)
 open import Relation.Nullary using (Dec; yes; no)
 
 data Var : ∀ Γ → Ty Γ → Set
@@ -88,11 +88,11 @@ data 0Ne where
 
 -- Decidable equality
 
-_≡var?_ : (v : Var Γ A) → (v' : Var Γ A) → Dec (v ≡ v')
-vz ≡var? vz = yes refl
-vs i ≡var? vs i' with i ≡var? i'
+_＝var?_ : (v : Var Γ A) → (v' : Var Γ A) → Dec (v ＝ v')
+vz ＝var? vz = yes refl
+vs i ＝var? vs i' with i ＝var? i'
 ... | yes refl = yes refl
-... | no i¬≡ = no λ { refl → i¬≡ refl }
-vz ≡var? vs i' = no λ ()
-vs i ≡var? vz = no λ ()
+... | no i¬＝ = no λ { refl → i¬＝ refl }
+vz ＝var? vs i' = no λ ()
+vs i ＝var? vz = no λ ()
  
