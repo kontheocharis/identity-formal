@@ -56,7 +56,7 @@ data Thin : CCon → CCon → Set where
   _∘p : Thin CΓ CΔ → Thin (CΓ ▷) CΔ
 
 variable
-  σ σ' : Thin _ _
+  σ σ' σ'' : Thin _ _
   
 thin : CVar CΓ → Thin CΔ CΓ → CVar CΔ
 thin v (t ∘p) = vs (thin v t)
@@ -130,6 +130,12 @@ thin-[thin-lift-p]-lift-⁺≡thin-[thin-lift]-lift-p {suc n} {v = vs v} = cong 
 [p][⁺]≡[][p] : ∀ {σ : Thin CΓ CΔ} → (z [ p ]) [ σ ⁺ ] ≡ (z [ σ ]) [ p ]
 [p][⁺]≡[][p] = [liftp][lift⁺]≡[lift][liftp]
 
+[id] : z [ id ] ≡ z
+[id] {z = ne x} = cong ne [id]
+[id] {z = nlam x} = cong nlam [id]
+[id] {z = napp x x₁} = cong₂ napp [id] [id]
+[id] {z = nvar x} = cong nvar (thinid)
+
 data _≈_ where
   -- Congruence
   ne≈ : x ≈ y → ne x ≈ ne y
@@ -197,26 +203,66 @@ nvar≈ refl [ σ ]≈ = nvar≈ refl
 n-Πη a b [ σ ]≈ = n-Πη (trs-trivial (a [ σ ⁺ ]≈) [p][⁺]≡[][p]) (b [ σ ⁺ ]≈)
 n-Πη-sym a b [ σ ]≈ = n-Πη-sym (trivial-trs (sym [p][⁺]≡[][p]) (a [ σ ⁺ ]≈)) (b [ σ ⁺ ]≈)
 
+vs-inj : vs v ≡ vs v' → v ≡ v'
+vs-inj refl = refl
+
+thin≡ : ∀ {CΔ} {v} {σ : Thin CΓ CΔ} {v'} → thin v σ ≡ thin v' σ → v ≡ v'
+thin≡ {v = vz} {v' = vz} p = refl
+thin≡ {CΓ = CΓ ▷} {CΔ = CΔ ▷} {v = vz} {σ ∘p} {v' = vs v'} p = thin≡ (vs-inj p)
+thin≡ {CΓ = CΓ ▷} {CΔ = CΔ ▷} {v = vs v} {σ ∘p} {v' = vz} p = thin≡ (vs-inj p)
+thin≡ {v = vs v} {σ = σ ⁺} {v' = vs v'} p = cong vs (thin≡ (vs-inj p))
+thin≡ {v = vs v} {σ = σ ∘p} {v' = vs v'} p = thin≡ (vs-inj p)
+
 _[]≈' : ∀ {σ : Thin CΓ CΔ} → (x [ σ ]) ≈ (y [ σ ]) → x ≈ y
+_[]≈' {x = ne x} {y = ne x₁} (ne≈ t) = ne≈ (t []≈')
+_[]≈' {x = ne x} {y = nlam x₁} (n-Πη-sym t t₁) =
+  n-Πη-sym ({!   !}) ({!  t₁ []≈' !})
+_[]≈' {x = nlam x} {y = ne x₁} (n-Πη t t₁) = {!   !}
+_[]≈' {x = nlam x} {y = nlam x₁} (nlam≈ t) = nlam≈ (t []≈')
+_[]≈' {x = napp x x₁} {y = napp x₂ x₃} (napp≈ t t₁) = napp≈ (t []≈') (t₁ []≈')
+_[]≈' {x = napp x x₁} {y = nvar x₂} ()
+_[]≈' {x = nvar x} {y = napp x₁ x₂} ()
+_[]≈' {x = nvar x} {y = nvar x₁} (nvar≈ x₂) = nvar≈ (thin≡ x₂)
+
+-- _[∘p]≈ : (x [ σ ]) ≈ (x' [ σ' ]) → x [ σ ∘p ] ≈ 
+
+trs[] : x ≈ y → y ≈ z → x ≈ z
+trs[] {x = ne x} {y = ne x₁} {z = ne x₂} (ne≈ a) (ne≈ b) = ne≈ (trs[] a b)
+trs[] {x = ne x} {y = ne x₁} {z = nlam x₂} (ne≈ a) (n-Πη-sym b b₁) = {!  n-Πη-sym !}
+trs[] {x = ne x} {y = nlam x₁} {z = ne x₂} (n-Πη-sym a a₁) (n-Πη b b₁) = ne≈ {!   !}
+trs[] {x = ne x} {y = nlam x₁} {z = nlam x₂} (n-Πη-sym a a₁) (nlam≈ b) = {!   !}
+trs[] {x = nlam x} {y = ne x₁} {z = ne x₂} (n-Πη a a₁) (ne≈ b) = {!   !}
+trs[] {x = nlam x} {y = ne x₁} {z = nlam x₂} (n-Πη a a₁) (n-Πη-sym b b₁) = {!   !}
+trs[] {x = nlam x} {y = nlam x₁} {z = ne x₂} (nlam≈ a) (n-Πη b b₁) = {!   !}
+trs[] {x = nlam x} {y = nlam x₁} {z = nlam x₂} (nlam≈ a) (nlam≈ b) = nlam≈ (trs[] a b)
+trs[] {x = napp x x₁} {y = napp x₂ x₃} {z = napp x₄ x₅} (napp≈ a a₁) (napp≈ b b₁) = napp≈ (trs[] a b) (trs[] a₁ b₁)
+trs[] {x = napp x x₁} {y = napp x₂ x₃} {z = nvar x₄} (napp≈ a a₁) ()
+trs[] {x = napp x x₁} {y = nvar x₂} {z = napp x₃ x₄} () b
+trs[] {x = napp x x₁} {y = nvar x₂} {z = nvar x₃} () b
+trs[] {x = nvar x} {y = napp x₁ x₂} {z = napp x₃ x₄} () b
+trs[] {x = nvar x} {y = napp x₁ x₂} {z = nvar x₃} () b
+trs[] {x = nvar x} {y = nvar x₁} {z = napp x₂ x₃} (nvar≈ x₄) ()
+trs[] {x = nvar x} {y = nvar x₁} {z = nvar x₂} (nvar≈ x₃) (nvar≈ x₄) = nvar≈ (trans x₃ x₄)
 
 trs : x ≈ y → y ≈ z → x ≈ z
-trs (ne≈ p₁) (ne≈ q) = ne≈ (trs p₁ q)
-trs (ne≈ p₁) (n-Πη-sym x q) = n-Πη-sym (trs (p₁ [ p ]≈) x) q
-trs (nlam≈ p₁) (nlam≈ q) = nlam≈ (trs p₁ q)
-trs (nlam≈ p₁) (n-Πη y q) = n-Πη y (trs p₁ q)
--- trs nzero≈ nzero≈ = nzero≈
--- trs (nsucc≈ p₁) (nsucc≈ q) = nsucc≈ (trs p₁ q)
-trs (napp≈ p₁ p₂) (napp≈ q q₁) = napp≈ (trs p₁ q) (trs p₂ q₁)
--- trs (napp≈ p₁ p₂) (n-elimη-sym q r s) = n-elimη-sym (trs (napp≈ p₁ p₂) q) r s
-trs (nvar≈ refl) (nvar≈ refl) = nvar≈ refl
--- trs (nvar≈ x) (n-elimη-sym q r s) = n-elimη-sym (trs (nvar≈ x) q) r s
--- trs (nelim≈ p₁ p₂ p₃) (nelim≈ q q₁ q₂) = nelim≈ (trs p₁ q) (trs p₂ q₁) (trs p₃ q₂)
--- trs (nelim≈ p₁ p₂ p₃) (n-elimη q r s) = n-elimη (trs p₁ q) (trs p₂ r) (trs p₃ s)
--- trs (nelim≈ p₁ p₂ p₃) (n-elimη-sym q r s) = n-elimη-sym (trs (nelim≈ p₁ p₂ p₃) q) r s
-trs (n-Πη x q) (ne≈ p₁) = n-Πη (trs x (p₁ [ p ]≈)) q
-trs (n-Πη x p₁) (n-Πη-sym y q) = nlam≈ (trs p₁ (trs (ne≈ (napp≈ (trs x y) (ne≈ (nvar≈ refl)))) q))
-trs (n-Πη-sym x p₁) (nlam≈ q) = n-Πη-sym x (trs p₁ q)
-trs (n-Πη-sym x p₁) (n-Πη y q) = ne≈ ({!   !})
+trs = {!   !}
+-- trs (ne≈ p₁) (ne≈ q) = ne≈ (trs p₁ q)
+-- trs (ne≈ p₁) (n-Πη-sym x q) = n-Πη-sym ({!   !}) q
+-- trs (nlam≈ p₁) (nlam≈ q) = nlam≈ (trs p₁ q)
+-- trs (nlam≈ p₁) (n-Πη y q) = n-Πη y (trs p₁ q)
+-- -- trs nzero≈ nzero≈ = nzero≈
+-- -- trs (nsucc≈ p₁) (nsucc≈ q) = nsucc≈ (trs p₁ q)
+-- trs (napp≈ p₁ p₂) (napp≈ q q₁) = napp≈ (trs p₁ q) (trs p₂ q₁)
+-- -- trs (napp≈ p₁ p₂) (n-elimη-sym q r s) = n-elimη-sym (trs (napp≈ p₁ p₂) q) r s
+-- trs (nvar≈ refl) (nvar≈ refl) = nvar≈ refl
+-- -- trs (nvar≈ x) (n-elimη-sym q r s) = n-elimη-sym (trs (nvar≈ x) q) r s
+-- -- trs (nelim≈ p₁ p₂ p₃) (nelim≈ q q₁ q₂) = nelim≈ (trs p₁ q) (trs p₂ q₁) (trs p₃ q₂)
+-- -- trs (nelim≈ p₁ p₂ p₃) (n-elimη q r s) = n-elimη (trs p₁ q) (trs p₂ r) (trs p₃ s)
+-- -- trs (nelim≈ p₁ p₂ p₃) (n-elimη-sym q r s) = n-elimη-sym (trs (nelim≈ p₁ p₂ p₃) q) r s
+-- trs (n-Πη x q) (ne≈ p₁) = n-Πη (trs x ({!   !})) q
+-- trs (n-Πη x p₁) (n-Πη-sym y q) = nlam≈ (trs p₁ (trs (ne≈ (napp≈ (trs x y) (ne≈ (nvar≈ refl)))) q))
+-- trs (n-Πη-sym x p₁) (nlam≈ q) = n-Πη-sym x (trs p₁ q)
+-- trs (n-Πη-sym x p₁) (n-Πη y q) = ne≈ ({!   !})
 -- trs (n-elimη p₁ p₂ p₃) (napp≈ q q₁) = n-elimη (trs p₁ (napp≈ q q₁)) p₂ p₃
 -- trs (n-elimη p₁ p₂ p₃) (nvar≈ x) = n-elimη (trs p₁ (nvar≈ x)) p₂ p₃
 -- trs (n-elimη p₁ p₂ p₃) (nelim≈ q q₁ q₂) = n-elimη (trs p₁ (nelim≈ q q₁ q₂)) p₂ p₃
@@ -363,4 +409,4 @@ trs (n-Πη-sym x p₁) (n-Πη y q) = ne≈ ({!   !})
 -- (x₃ ≈? nelim x x₁ x₂) | napp x₄ x₅ | p | no ¬q | r = no λ { n-elimη-sym → ¬q rfl }
 -- (x₃ ≈? nelim x x₁ x₂) | nvar x₄ | p | no ¬q | r = no λ { n-elimη-sym → ¬q rfl }
 -- (x₃ ≈? nelim x x₁ x₂) | napp x₄ x₅ | p | q | no ¬r = no λ { n-elimη-sym → ¬r rfl }
--- (x₃ ≈? nelim x x₁ x₂) | nvar x₄ | p | q | no ¬r = no λ { n-elimη-sym → ¬r rfl } 
+-- (x₃ ≈? nelim x x₁ x₂) | nvar x₄ | p | q | no ¬r = no λ { n-elimη-sym → ¬r rfl }  
