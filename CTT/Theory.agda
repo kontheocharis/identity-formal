@@ -78,9 +78,9 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
   open Sorts sorts
   open InSorts sorts
 
-  record Sortsᴰ : Set1 where
+  record Sortsᴰ : Set2 where
     field
-      CConᴰ : CCon → Set
+      CConᴰ : CCon → Set1
       CSubᴰ : ∀ {CΓ CΔ} → CConᴰ CΓ → CConᴰ CΔ → CSub CΓ CΔ → Set
       CTmᴰ :  ∀ {CΓ} → CConᴰ CΓ → CTm CΓ → Set 
 
@@ -101,7 +101,7 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
     _＝[_]CTm_ : CTmᴰ CΓᴰ Ca → Ca ＝ Ca' → CTmᴰ CΓᴰ Ca' → Prop
     x ＝[ p ]CTm y = x ＝[ cong (CTmᴰ _) p ] y
     
-    record Ctorsᴰ : Set1 where
+    record Ctorsᴰ : Set2 where
       field 
         ∙ᴰ : CConᴰ ∙
         _▷ᴰ : CConᴰ CΓ → CConᴰ (CΓ ▷)
@@ -139,7 +139,7 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
         Πηᴰ : lamᴰ (appᴰ Caᴰ) ＝[ Πη ]CTm Caᴰ
         Πβᴰ : appᴰ (lamᴰ Caᴰ) ＝[ Πβ ]CTm Caᴰ
       
-record Modelᴰ (m : Model) : Set1 where
+record Modelᴰ (m : Model) : Set2 where
   open Model m
   field
     sᴰ : Sortsᴰ s c
