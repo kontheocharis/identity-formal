@@ -104,9 +104,10 @@ module Normalisation where
       sub-⟦⟧ : ∀ {γ} {Cρ : CThin CΓ' CΓ' Cσ'} → ⟦_⟧ (sub NΓ γ Cρ) ＝ sub NΔ (⟦_⟧ γ) Cρ
       repr-⟦⟧ : ∀ {γ : NCon.⟦ NΓ ⟧ CΓ'} → NΔ .repr (⟦_⟧ γ) ＝ (Cσ ∘ NΓ .repr γ)
   open NSub
-      
   
   record NTm (NΓ : NCon CΓ) (Ca : CTm CΓ) : Set where
+    field
+      ⟦_⟧ : (γ : ⟦ NΓ ⟧ CΓ') → CNf CΓ' (Ca [ NΓ .repr γ ])
 
   record Σ-NTm (NΓ : NCon CΓ) : Set where
     field
@@ -177,7 +178,7 @@ module Normalisation where
       ((Cσ ∘ Cσ') ∘ CΔᴰ .repr γ)
     ∎
 
-  N .cᴰ .Ctorsᴰ.id∘ᴰ {Cσᴰ = Cσᴰ} = {!   !}
+  N .cᴰ .Ctorsᴰ.id∘ᴰ {Cσᴰ} = {!   !}
 
   N .cᴰ .Ctorsᴰ.∘idᴰ = {!   !}
 
@@ -191,7 +192,7 @@ module Normalisation where
 
   N .cᴰ .Ctorsᴰ._[_]ᴰ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.qᴰ = {!   !}
+  NTm.⟦ N .cᴰ .Ctorsᴰ.qᴰ {CΓᴰ = NΓ} ⟧ (pair γ t) = {!   !}
 
   N .cᴰ .Ctorsᴰ._,ᴰ_ = {!   !}
 
