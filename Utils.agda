@@ -1,7 +1,7 @@
 module Utils where
 
 postulate
-  _~>_ : ∀ {i} {A B : Set i} → (a : A) → (b : B) → Set i
+  _~>_ : ∀ {i} {A : Set i} → (a : A) → (b : A) → Set i
 
 {-# BUILTIN REWRITE _~>_ #-}
 
@@ -15,10 +15,10 @@ data _＝_ {i} {A : Set i} : (a b : A) → Prop i where
   
 postulate
   transport : ∀ {i j} {A : Set j} {x y} (P : A → Set i) → x ＝ y → P x → P y
-  transport-id : ∀ {i} {A : Set i} {P : A → Set i} {x} {r : P x} → transport P refl r ~> x
+  transport-id : ∀ {i} {A : Set i} {P : A → Set i} {x} {p : x ＝ x} {r : P x} → transport P p r ~> r
 
   coe : ∀ {i} {A B : Set i} → A ＝ B → A → B
-  coe-id : ∀ {i} {A} {x : A} → coe {i} {A} {A} refl x ~> x
+  coe-id : ∀ {i} {A} {x : A} {p : A ＝ A} → coe {i} {A} {A} p x ~> x
 
 {-# REWRITE transport-id #-}
 {-# REWRITE coe-id #-}
