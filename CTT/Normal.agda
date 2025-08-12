@@ -1,102 +1,57 @@
 module CTT.Normal where
 
-open import Data.Bool
-open import CTT.Theory
+open import CTT.Theory renaming (syn to S)
 open import Utils
-open import Relation.Nullary.Decidable
-open import Relation.Binary.PropositionalEquality hiding ([_]) renaming (cong to cong'; sym to sym')
 
-open Relation.Binary.PropositionalEquality.≡-Reasoning
+open Model S
 
-open CTT.Theory.Model syn
+data CVar : CCon → Set where
+  vz : CVar (CΓ ▷)
+  vs : CVar CΓ → CVar (CΓ ▷)
 
-data CNf : (CΓ : CCon) → CTm CΓ → Set
-data CNe : (CΓ : CCon) → CTm CΓ → Set
-data CVar : (CΓ : CCon) → CTm CΓ → Set
+data Nf-βη : ∀ CΓ → CTm CΓ → Set
+data Body-βη : ∀ CΓ {t : CTm CΓ} → Nf-βη CΓ t → Set
+data Subj-βη : ∀ CΓ {t : CTm CΓ} → Nf-βη CΓ t → Set
+data Not-η : ∀ CΓ {Ca : CTm CΓ} {Cna : Nf-βη CΓ Ca} → Subj-βη CΓ Cna → ∀ {Cb : CTm CΓ} → Nf-βη CΓ Cb → Set
+data _∈_ : CVar CΓ → ∀ {Ca : CTm CΓ} → Nf-βη CΓ Ca → Set
 
-coerce : ∀ {i} {A B : Set i} → A ≡ B → A → B
-coerce refl a = a
-
-infix 4 _≡[_]_
-_≡[_]_ : ∀ {i} {A B : Set i} → A → A ≡ B → B → Set i
-x ≡[ p ] y = coerce p x ≡ y
-
-data CVar where
-  vz : CVar (CΓ ▷) q
-  vs : CVar CΓ Ca → CVar (CΓ ▷) (Ca [ p ])
-
-data CNf where
-  nlam : CNf (CΓ ▷) Ca → CNf CΓ (lam Ca)
-  ne : CNe CΓ Ca → CNf CΓ Ca
+variable
+  Cna : Nf-βη _ Ca
+  Cna' : Nf-βη _ Ca'
+  Cnb : Nf-βη _ Cb
+  Cs Cs' : Subj-βη _ _ 
+  Cbo Cbo' : Body-βη _ _
+  Cv Cv' : CVar _
   
-data CNe where
-  napp : CNe CΓ Ca → CNf CΓ Cb → CNe CΓ (app Ca [ < Cb > ])
-  nvar : CVar CΓ Ca → CNe CΓ Ca
+⌜_⌝var : CVar CΓ → CTm CΓ
+⌜ vz ⌝var = q
+⌜ vs v ⌝var = ⌜ v ⌝var [ p ]
+
+app' : CTm CΓ → CTm CΓ → CTm CΓ
+app' t u = app t [ id , u ]
+
+data Nf-βη where
+  nvar : (v : CVar CΓ) → Nf-βη CΓ (⌜ v ⌝var)
+  nlam : ∀ {Cna : Nf-βη (CΓ ▷) Ca} → Body-βη (CΓ ▷) Cna → Nf-βη CΓ (lam Ca)
+  napp : ∀ {Cna : Nf-βη CΓ Ca} → Subj-βη CΓ Cna → (Cnb : Nf-βη CΓ Cb) → Nf-βη CΓ (app' Ca Cb)
   
-np : CNe CΓ Ca → CNe (CΓ ▷) (Ca [ p ])
+data Body-βη where
+  bvar : (v : CVar CΓ) → Body-βη CΓ (nvar v)
+  blam : ∀ {Cna : Nf-βη (CΓ ▷) Ca} → (Cbo : Body-βη (CΓ ▷) Cna) → Body-βη CΓ {lam Ca} (nlam Cbo)
+  bapp : ∀ {Cna : Nf-βη CΓ Ca} → (Cs : Subj-βη CΓ Cna) → (Cnb : Nf-βη CΓ Cb) → Not-η CΓ Cs Cnb → Body-βη CΓ {app' Ca Cb} (napp Cs Cnb)
 
-lift : ∀ {i} {A : Set i} {a b : A} → a ＝ b → a ≡ b
-
-p⁺∘<q>≡id : ((p {CΓ} ⁺) ∘ < q >) ≡ id
-p⁺∘<q>≡id = begin
-    (p ⁺) ∘ < q >
-  ≡⟨⟩
-    ((p ∘ p) , q) ∘ (id , (q [ id ]))
-  ≡⟨ lift ,∘ ⟩
-    (((p ∘ p) ∘ (id , (q [ id ]))) , (q [ id , (q [ id ]) ]))
-  ≡⟨ lift (cong (λ σ → σ , (q [ id , (q [ id ]) ])) ∘assoc) ⟩
-    ((p ∘ (p ∘ (id , (q [ id ])))) , (q [ id , (q [ id ]) ]))
-  ≡⟨ lift (cong (λ σ →  (p ∘ σ) , (q [ id , (q [ id ]) ]) ) p∘,) ⟩
-    ((p ∘ id) , (q [ id , (q [ id ]) ]))
-  ≡⟨ lift (cong (λ σ →  σ , (q [ id , (q [ id ]) ]) ) ∘id) ⟩
-    (p , (q [ id , (q [ id ]) ]))
-  ≡⟨ lift (cong (λ a →  p , a ) q[,]) ⟩
-    (p , (q [ id ]))
-  ≡⟨ lift (cong (λ a →  p , a ) [id]) ⟩
-    (p , q)
-  ≡⟨ lift p,q ⟩
-    id
-  ∎
-
-Cη : lam (app (Ca [ p ]) [ < q > ]) ≡ Ca
-Cη {Ca = Ca} =
-  begin
-    lam (app (Ca [ p ]) [ < q > ])
-  ≡⟨ {!  cong (lam (app  !} ⟩
-    lam (((app Ca) [ p ⁺ ]) [ < q > ])
-  ≡⟨ lift (cong lam (sym [∘])) ⟩
-    lam ((app Ca) [ (p ⁺) ∘ < q > ])
-  ≡⟨ cong' (λ σ → lam ((app Ca) [ σ ])) p⁺∘<q>≡id ⟩
-    lam ((app Ca) [ id ])
-  ≡⟨ lift (cong lam [id]) ⟩
-    lam (app Ca)
-  ≡⟨ lift Πη ⟩
-    Ca
-  ∎
+data Subj-βη where
+  svar : (v : CVar CΓ) → Subj-βη CΓ (nvar v)
+  sapp : ∀ {Cna : Nf-βη CΓ Ca} → (Cs : Subj-βη CΓ Cna) → (Cnb : Nf-βη CΓ Cb) → Subj-βη CΓ {app' Ca Cb} (napp Cs Cnb)
   
-data _≈[_]CNf_ : CNf CΓ Ca → Ca ≡ Cb → CNf CΓ Cb → Set where
-  n-η : ∀ {f} → nlam (ne (napp (np {Ca = Ca} f) (ne (nvar vz)))) ≈[ Cη ]CNf ne f
-  
--- record _≡Nf_ (a : CNf CΓ Ca) (b : CNf CΓ Cb) : Set where
---   constructor _over_
---   field
---     p : Ca ≡ Cb
---     np : a ≡[ congruence (CNf CΓ) p ] b
-  
--- record _≡Ne_ (a : CNe CΓ Ca) (b : CNe CΓ Cb) : Set where
---   constructor _over_
---   field
---     p : Ca ≡ Cb
---     np : a ≡[ congruence (CNe CΓ) p ] b
-    
--- {-# INJECTIVE lam #-}
+data Not-η where
+  vs-var-not-η : Not-η (CΓ ▷) Cs (nvar (vs Cv))
+  lam-not-η : Not-η CΓ Cs {lam Ca} (nlam Cbo)
+  app-not-η : Not-η CΓ Cs {app' Ca Cb} (napp Cs' Cnb)
+  fn-uses-vz-not-η : vz ∈ Cna → Not-η (CΓ ▷) {Ca} Cs (nvar vz)
 
--- _＝Nf?_ : (a : CNf CΓ Ca) → (b : CNf CΓ Cb) → Dec (a ≡Nf b)
--- nlam a ＝Nf? nlam b with a ＝Nf? b
--- ... | yes (refl over refl) = yes (refl over refl)
--- ... | no ¬p = no λ { (p' over p) → ¬p {!   !} }
--- nlam a ＝Nf? ne x = {!   !}
--- ne x ＝Nf? nlam b = {!   !}
--- ne x ＝Nf? ne x₁ = {!   !}
-
--- _＝Ne?_ : (a : CNe CΓ Ca) → (b : CNe CΓ Cb) → Dec (a ≡Ne b) 
+data _∈_ where
+  ∈-var : Cv ∈ (nvar Cv)
+  ∈-app-left : ∀ {Cs : Subj-βη CΓ Cna} → Cv ∈ Cna → Cv ∈ (napp Cs Cnb)
+  ∈-app-right : Cv ∈ Cnb → Cv ∈ (napp Cs Cnb)
+  ∈-lam : ∀ {Cbo : Body-βη (CΓ ▷) Cna} → vs Cv ∈ Cna → Cv ∈ (nlam Cbo)

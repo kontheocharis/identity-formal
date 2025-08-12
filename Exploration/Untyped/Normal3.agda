@@ -1,5 +1,4 @@
 {-# OPTIONS --cubical #-}
-module CTT.Normal3 where
 
 open import Data.Bool
 open import Data.Nat
@@ -60,19 +59,20 @@ variable
   ρ ρ' ρ'' : Thin _ _ _
   σ σ' σ'' : Sub _ _
   
-_[_] : Tm Δ → Sub Γ Δ → Tm Γ
-
-id : Sub Γ Γ
-
-term : Sub Γ ∙
-
-p : Sub (Γ ▷) Γ
-
-_,_ : Sub Γ Δ → Tm Γ → Sub Γ (Δ ▷)
 
 data Var where
   vz : Var (Γ ▷)
   vs : Var Γ → Var (Γ ▷)
+  
+data Sub where
+  ε : Sub Γ ∙
+  _,_ : Sub Γ Δ → Tm Γ → Sub Γ (Δ ▷)
+  
+p : Sub (Γ ▷) Γ
+id : Sub Γ Γ
+_[_] : Tm Δ → Sub Γ Δ → Tm Γ
+q : Tm (Γ ▷)
+_∘_ : Sub Γ Δ → Sub Γ' Γ → Sub Γ' Δ
 
 data Tm where
   lam : Tm (Γ ▷) → Tm Γ
@@ -81,6 +81,16 @@ data Tm where
   
   β : app (lam t) u ≡ (t [ id , u ])
   η : lam (app (t [ p ]) (var vz)) ≡ t
+  
+q = var vz
+
+id {Γ = ∙} = ε
+id {Γ = Γ ▷} = p , q
+
+ε ∘ σ' = ε
+(σ , x) ∘ σ' = (σ ∘ σ') , (x [ σ' ])
+  
+p = {!   !}
 
 pᵀ : Thin (Γ ▷) Γ p
 _[_]n : Nf-β Δ t → Thin Γ Δ σ → Nf-β Γ (t [ σ ])
@@ -132,28 +142,28 @@ data _∈_ where
 --   _⁺ : Thin Γ Δ σ → Thin (Γ ▷) (Δ ▷) ({!   !} σ)
 --   _∘p : Thin Γ Δ σ → Thin (Γ ▷) Δ ({!   !} σ)
 
--- data Dec (X : Set) : Set where
---   yes : X → Dec X
---   no : (X → ⊥) → Dec X
+data Dec (X : Set) : Set where
+  yes : X → Dec X
+  no : (X → ⊥) → Dec X
   
 -- data _＋_ (A : Set) (B : Set) : Set where
 --   inl : A → A ＋ B
 --   inr : B → A ＋ B
   
--- η-reduce : Nf-β Γ t → Nf-βη Γ t
--- η-lam : Nf-β (Γ ▷) t → Nf-βη Γ (lam t)
--- η-subj : Subj-β Γ {t} nbt → Subj-βη Γ {t} (η-reduce nbt)
--- η-lam-body-app : (s : Subj-β (Γ ▷) {t} nbt) (nu : Nf-β (Γ ▷) u)
---   → Body-βη (Γ ▷) {app t u} (napp (η-subj s) (η-reduce nu))
--- η-body-lam : (nt : Nf-β ((Γ ▷) ▷) t) → Body-βη (Γ ▷) (η-lam nt)
+η-reduce : Nf-β Γ t → Nf-βη Γ t
+η-lam : Nf-β (Γ ▷) t → Nf-βη Γ (lam t)
+η-subj : Subj-β Γ {t} nbt → Subj-βη Γ {t} (η-reduce nbt)
+η-lam-body-app : (s : Subj-β (Γ ▷) {t} nbt) (nu : Nf-β (Γ ▷) u)
+  → Body-βη (Γ ▷) {app t u} (napp (η-subj s) (η-reduce nu))
+η-body-lam : (nt : Nf-β ((Γ ▷) ▷) t) → Body-βη (Γ ▷) (η-lam nt)
 
--- _≡?_ : (v : Var Γ) → (v' : Var Γ) → Dec (v ≡ v')
+_≡?_ : (v : Var Γ) → (v' : Var Γ) → Dec (v ≡ v')
 -- vz ≡? vz = yes refl
--- -- vz ≡? vs v' = no λ { () }
--- -- vs v ≡? vz =  no λ { () }
--- -- vs v ≡? vs v' with v ≡? v'
--- -- ... | yes refl = yes refl
--- -- ... | no x = no λ { refl → x refl }
+-- vz ≡? vs v' = no λ { () }
+-- vs v ≡? vz =  no λ { () }
+-- vs v ≡? vs v' with v ≡? v'
+-- ... | yes refl = yes refl
+-- ... | no x = no λ { refl → x refl }
 
 -- _∈?_ : (v : Var Γ) → (t : Tm Γ) → Dec (v ∈ t)
 -- -- v ∈? lam t with (vs v) ∈? t
