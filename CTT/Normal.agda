@@ -192,7 +192,9 @@ module Normalisation where
 
   N .cᴰ .Ctorsᴰ._[_]ᴰ = {!   !}
 
-  NTm.⟦ N .cᴰ .Ctorsᴰ.qᴰ {CΓᴰ = NΓ} ⟧ (pair γ t) = {!   !}
+
+  NTm.⟦ N .cᴰ .Ctorsᴰ.qᴰ {CΓᴰ = NΓ} ⟧ {CΓ'} (pair γ t)
+    = coe (cong (λ t → CNf CΓ' t) (sym q[,])) (NTm.⟦ t .nf ⟧ γ)
 
   N .cᴰ .Ctorsᴰ._,ᴰ_ = {!   !}
 
@@ -202,7 +204,8 @@ module Normalisation where
 
   N .cᴰ .Ctorsᴰ.,∘ᴰ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.lamᴰ = {!   !}
+  NTm.⟦ N .cᴰ .Ctorsᴰ.lamᴰ x ⟧ γ = {!   !}
+
   N .cᴰ .Ctorsᴰ.appᴰ = {!   !}
   
   
