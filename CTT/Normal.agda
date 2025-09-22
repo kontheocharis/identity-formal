@@ -3,6 +3,7 @@ module CTT.Normal where
 open import CTT.Theory renaming (syn to S)
 open import Utils
 open import Data.Unit
+open import Data.Empty
 open import Data.Product using (Σ-syntax; proj₁; proj₂) renaming (_,_ to pair)
 
 open ＝-Reasoning
@@ -17,6 +18,7 @@ data CVar : CCon → Set where
 data CThin : ∀ CΓ CΔ → CSub CΓ CΔ → Set
 
 data CNf : ∀ CΓ → CTm CΓ → Set
+data CNe : ∀ CΓ → CTm CΓ → Set
 data Body : ∀ CΓ {t : CTm CΓ} → CNf CΓ t → Set
 data Subj : ∀ CΓ {t : CTm CΓ} → CNf CΓ t → Set
 data Not-η : ∀ CΓ {Ca : CTm CΓ} {Cna : CNf CΓ Ca} → Subj CΓ Cna → ∀ {Cb : CTm CΓ} → CNf CΓ Cb → Set
@@ -26,6 +28,9 @@ variable
   Cna : CNf _ Ca
   Cna' : CNf _ Ca'
   Cnb : CNf _ Cb
+  Cnea : CNe _ Ca
+  Cnea' : CNe _ Ca'
+  Cneb : CNe _ Cb
   Cs Cs' : Subj _ _ 
   Cbo Cbo' : Body _ _
   Cv Cv' : CVar _
@@ -80,6 +85,16 @@ data _∈_ where
   ∈-app-right : Cv ∈ Cnb → Cv ∈ (napp Cs Cnb)
   ∈-lam : ∀ {Cbo : Body (CΓ ▷) Cna} → vs Cv ∈ Cna → Cv ∈ (nlam Cbo)
   
+▷≠∙ : (CΓ ▷) ＝ ∙ → ⊥
+  
+thin : CVar CΔ → CThin CΓ CΔ Cσ → CVar CΓ
+  
+_[_]ᵀNf : CNf CΔ Ca → CThin CΓ CΔ Cσ → CNf CΓ (Ca [ Cσ ])
+-- nvar v [ ρ ]ᵀ = {!   !}
+-- nlam x [ ρ ]ᵀ = {!   !}
+-- napp x t [ ρ ]ᵀ = {!   !}
+
+_[_]ᵀNe : CNe CΔ Ca → CThin CΓ CΔ Cσ → CNe CΓ (Ca [ Cσ ])
 
 module Normalisation where
 
@@ -88,32 +103,44 @@ module Normalisation where
   
   record NCon (CΓ : CCon) : Set1 where
     field
-      ⟦_⟧ : CCon → Set
+      ⟦_⟧ : (CΔ : CCon) → CSub CΔ CΓ → Set
 
-      sub : ⟦_⟧ CΔ → CThin CΓ' CΔ Cσ → ⟦_⟧ CΓ'
-      sub-∘ : ∀ γ → sub γ (Cρ ∘ᵀ Cρ') ＝ sub (sub γ Cρ) Cρ'
-      sub-id : ∀ γ → sub {CΓ'} γ idᵀ ＝ γ
+      sub : ⟦_⟧ CΔ Cσ → CThin CΓ' CΔ Cσ' → ⟦_⟧ CΓ' (Cσ ∘ Cσ')
+      sub-∘ : ∀ (γ : ⟦_⟧ CΔ Cσ) → sub γ (Cρ ∘ᵀ Cρ') ＝[ cong (⟦_⟧ _) (sym ∘assoc) ] sub (sub γ Cρ) Cρ'
+      sub-id : ∀ (γ : ⟦_⟧ CΔ Cσ) → sub γ idᵀ ＝[ cong (⟦_⟧ _) ∘id ] γ
       
-      repr : ⟦_⟧ CΔ → CSub CΔ CΓ
-      repr-[] : ∀ {γ} {Cρ : CThin _ _ Cσ} → repr (sub γ Cρ) ＝ repr γ ∘ Cσ
   open NCon
       
   record NSub (NΓ : NCon CΓ) (NΔ : NCon CΔ) (Cσ : CSub CΓ CΔ) : Set where
     field
-      ⟦_⟧ : ⟦ NΓ ⟧ CΓ' → ⟦ NΔ ⟧ CΓ'
-      sub-⟦⟧ : ∀ {γ} {Cρ : CThin CΓ' CΓ' Cσ'} → ⟦_⟧ (sub NΓ γ Cρ) ＝ sub NΔ (⟦_⟧ γ) Cρ
-      repr-⟦⟧ : ∀ {γ : NCon.⟦ NΓ ⟧ CΓ'} → NΔ .repr (⟦_⟧ γ) ＝ (Cσ ∘ NΓ .repr γ)
+      ⟦_⟧ : ⟦ NΓ ⟧ CΓ' Cσ' → ⟦ NΔ ⟧ CΓ' (Cσ ∘ Cσ')
+      sub-⟦⟧ : ∀ {γ : NCon.⟦ NΓ ⟧ CΓ Cσ'} {Cρ : CThin _ _ Cσ'}
+        → ⟦_⟧ (sub NΓ γ Cρ) ＝[ cong (NCon.⟦ NΔ ⟧ _) (sym ∘assoc) ] sub NΔ (⟦_⟧ γ) Cρ
   open NSub
   
-  record NTm (NΓ : NCon CΓ) (Ca : CTm CΓ) : Set where
+  record NTy (NΓ : NCon CΓ) : Set1 where
     field
-      ⟦_⟧ : (γ : ⟦ NΓ ⟧ CΓ') → CNf CΓ' (Ca [ NΓ .repr γ ])
+      ⟦_⟧ : (CΔ : CCon) → CTm CΔ → Set
 
-  record Σ-NTm (NΓ : NCon CΓ) : Set where
+      sub : ⟦_⟧ CΔ Ca → CThin CΓ' CΔ Cσ → ⟦_⟧ CΓ' (Ca [ Cσ ])
+      sub-∘ : ∀ (γ : ⟦_⟧ CΔ Ca) → sub γ (Cρ ∘ᵀ Cρ') ＝[ cong (⟦_⟧ _) [∘] ] sub (sub γ Cρ) Cρ'
+      sub-id : ∀ (γ : ⟦_⟧ CΔ Ca) → sub γ idᵀ ＝[ cong (⟦_⟧ _) [id] ] γ
+      
+      quot : ⟦_⟧ CΔ Ca → CNf CΔ Ca
+      quot-[] : ∀ {γ : ⟦_⟧ CΔ Ca} → quot (sub γ Cρ) ＝ (quot γ [ Cρ ]ᵀNf)
+
+      ref : CNe CΔ Ca → ⟦_⟧ CΔ Ca
+      ref-[] : ∀ {Cnea : CNe CΔ Ca} {Cρ : CThin _ _ Cσ} → ref (Cnea [ Cρ ]ᵀNe) ＝ sub (ref Cnea) Cρ
+
+  
+  record NTm (NΓ : NCon CΓ) (NA : NTy NΓ) (Ca : CTm CΓ) : Set where
     field
-      tm : CTm CΓ
-      nf : NTm NΓ tm
-  open Σ-NTm 
+
+  -- record Σ-NTm (NΓ : NCon CΓ) : Set where
+  --   field
+  --     tm : CTm CΓ
+  --     nf : NTm NΓ {!   !}  tm
+  -- open Σ-NTm 
       
 
   NS : Sortsᴰ s c
@@ -121,98 +148,100 @@ module Normalisation where
   -- Sorts
   NS .CConᴰ = NCon
   NS .CSubᴰ = NSub
-  NS .CTmᴰ = NTm
+  NS .CTmᴰ CΓ = NTm {!   !} {!   !}
 
   open InSortsᴰ s c NS
 
   N : Modelᴰ S
   N .sᴰ = NS
 
+
   -- Substitution calc
-  ⟦ N .cᴰ .Ctorsᴰ.∙ᴰ ⟧ CΔ = ⊤ 
+  ⟦ N .cᴰ .Ctorsᴰ.∙ᴰ ⟧ CΔ _ = ⊤ 
   N .cᴰ .Ctorsᴰ.∙ᴰ .sub _ _ = tt
   N .cᴰ .Ctorsᴰ.∙ᴰ .sub-∘ γ = refl
   N .cᴰ .Ctorsᴰ.∙ᴰ .sub-id γ = refl
-  N .cᴰ .Ctorsᴰ.∙ᴰ .repr γ = ε
-  N .cᴰ .Ctorsᴰ.∙ᴰ .repr-[] = sym εη
+  -- N .cᴰ .Ctorsᴰ.∙ᴰ .repr γ = ε
+  -- N .cᴰ .Ctorsᴰ.∙ᴰ .repr-[] = sym εη
+
+  ⟦ (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ ⟧ CΔ Cσ = Σ[ γ ∈ ⟦ NΓ ⟧ CΔ (p ∘ Cσ) ] NTm NΓ {!   !} {! q  !}
+  -- (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub (pair γ t) ρ = pair (NΓ .sub γ ρ) t
+  -- (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub-∘ {Cρ = Cρ} {Cρ' = Cρ'} (pair γ t) = cong (λ γ' → pair γ' t ) (NΓ .sub-∘ γ)
+  -- (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub-id (pair γ t) = cong (λ γ' → pair γ' t) (NΓ .sub-id γ)
+  -- (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .repr (pair γ t) = NΓ .repr γ , (t .tm [ NΓ .repr γ ])
+  -- (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .repr-[] {Cσ = Cσ} {γ = pair γ t} {Cρ = Cρ} = begin
+  --     (NΓ .repr (NΓ .sub γ Cρ) , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))
+  --   ＝⟨ cong (λ σ → (σ , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))) (NΓ .repr-[]) ⟩
+  --     ((NΓ .repr γ ∘ Cσ) , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))
+  --   ＝⟨ cong (λ σ → ((NΓ .repr γ ∘ Cσ) , (t .tm [ σ ]))) (NΓ .repr-[]) ⟩
+  --     ((NΓ .repr γ ∘ Cσ) , (t .tm [ NΓ .repr γ ∘ Cσ ]))
+  --   ＝⟨ cong (λ t' → ((NΓ .repr γ ∘ Cσ) , t')) [∘] ⟩
+  --     ((NΓ .repr γ ∘ Cσ) , ((t .tm [ NΓ .repr γ ]) [ Cσ ]))
+  --   ＝⟨ sym ,∘ ⟩
+  --     ((cᴰ N Ctorsᴰ.▷ᴰ) NΓ .repr (pair γ t) ∘ Cσ)
+  --   ∎
+
+  -- ⟦ N .cᴰ .Ctorsᴰ.idᴰ ⟧ γ = γ
+  -- N .cᴰ .Ctorsᴰ.idᴰ .sub-⟦⟧ = refl
+  -- N .cᴰ .Ctorsᴰ.idᴰ .repr-⟦⟧ = sym id∘
+
+  -- ⟦ N .cᴰ .Ctorsᴰ._∘ᴰ_ Nσ Nσ' ⟧ γ = ⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ)
+  -- N .cᴰ .Ctorsᴰ._∘ᴰ_ {CΓᴰ = CΓᴰ} {CΓᴰ' = CΓᴰ'} {CΔᴰ = CΔᴰ} Nσ Nσ' .sub-⟦⟧ {γ = γ} {Cρ = Cρ} 
+  --   = begin
+  --     ⟦ Nσ ⟧ (⟦ Nσ' ⟧ (sub CΔᴰ γ Cρ))
+  --   ＝⟨ cong (λ s → ⟦ Nσ ⟧ s) (Nσ' .sub-⟦⟧) ⟩
+  --     ⟦ Nσ ⟧ (sub CΓᴰ (⟦ Nσ' ⟧ γ) Cρ)
+  --   ＝⟨ Nσ .sub-⟦⟧ ⟩
+  --     sub CΓᴰ' (⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ)) Cρ
+  --   ∎
+  -- N .cᴰ .Ctorsᴰ._∘ᴰ_ {CΓᴰ = CΓᴰ} {CΓᴰ' = CΓᴰ'} {Cσ} {CΔᴰ = CΔᴰ} {Cσ'} Nσ Nσ' .repr-⟦⟧ {γ = γ}
+  --   = begin
+  --     CΓᴰ' .repr (⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ))
+  --   ＝⟨ Nσ .repr-⟦⟧ ⟩
+  --     (Cσ ∘ CΓᴰ .repr (⟦ Nσ' ⟧ γ))
+  --   ＝⟨ cong (Cσ ∘_) (Nσ' .repr-⟦⟧) ⟩
+  --     (Cσ ∘ (Cσ' ∘ CΔᴰ .repr γ))
+  --   ＝⟨ sym ∘assoc ⟩
+  --     ((Cσ ∘ Cσ') ∘ CΔᴰ .repr γ)
+  --   ∎
+
+  -- N .cᴰ .Ctorsᴰ.id∘ᴰ {Cσᴰ} = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ.∘idᴰ = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ.∘assocᴰ = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ.εᴰ = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ.εηᴰ = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ.pᴰ = {!   !}
+
+  -- N .cᴰ .Ctorsᴰ._[_]ᴰ = {!   !}
 
 
-  ⟦ (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ ⟧ CΔ = Σ[ γ ∈ ⟦ NΓ ⟧ CΔ ] Σ-NTm NΓ
-  (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub (pair γ t) ρ = pair (NΓ .sub γ ρ) t
-  (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub-∘ {Cρ = Cρ} {Cρ' = Cρ'} (pair γ t) = cong (λ γ' → pair γ' t ) (NΓ .sub-∘ γ)
-  (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .sub-id (pair γ t) = cong (λ γ' → pair γ' t) (NΓ .sub-id γ)
-  (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .repr (pair γ t) = NΓ .repr γ , (t .tm [ NΓ .repr γ ])
-  (N .cᴰ Ctorsᴰ.▷ᴰ) NΓ .repr-[] {Cσ = Cσ} {γ = pair γ t} {Cρ = Cρ} = begin
-      (NΓ .repr (NΓ .sub γ Cρ) , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))
-    ＝⟨ cong (λ σ → (σ , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))) (NΓ .repr-[]) ⟩
-      ((NΓ .repr γ ∘ Cσ) , (t .tm [ NΓ .repr (NΓ .sub γ Cρ) ]))
-    ＝⟨ cong (λ σ → ((NΓ .repr γ ∘ Cσ) , (t .tm [ σ ]))) (NΓ .repr-[]) ⟩
-      ((NΓ .repr γ ∘ Cσ) , (t .tm [ NΓ .repr γ ∘ Cσ ]))
-    ＝⟨ cong (λ t' → ((NΓ .repr γ ∘ Cσ) , t')) [∘] ⟩
-      ((NΓ .repr γ ∘ Cσ) , ((t .tm [ NΓ .repr γ ]) [ Cσ ]))
-    ＝⟨ sym ,∘ ⟩
-      ((cᴰ N Ctorsᴰ.▷ᴰ) NΓ .repr (pair γ t) ∘ Cσ)
-    ∎
+  -- N .cᴰ .Ctorsᴰ.qᴰ = {!   !}
+  -- -- NTm.⟦ N .cᴰ .Ctorsᴰ.qᴰ {CΓᴰ = NΓ} ⟧ {CΓ'} (pair γ t) = ?
+  --   -- = coe (cong (λ t → CNf CΓ' t) (sym q[,])) (NTm.⟦ t .nf ⟧ γ)
 
-  ⟦ N .cᴰ .Ctorsᴰ.idᴰ ⟧ γ = γ
-  N .cᴰ .Ctorsᴰ.idᴰ .sub-⟦⟧ = refl
-  N .cᴰ .Ctorsᴰ.idᴰ .repr-⟦⟧ = sym id∘
+  -- N .cᴰ .Ctorsᴰ._,ᴰ_ = {!   !}
 
-  ⟦ N .cᴰ .Ctorsᴰ._∘ᴰ_ Nσ Nσ' ⟧ γ = ⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ)
-  N .cᴰ .Ctorsᴰ._∘ᴰ_ {CΓᴰ = CΓᴰ} {CΓᴰ' = CΓᴰ'} {CΔᴰ = CΔᴰ} Nσ Nσ' .sub-⟦⟧ {γ = γ} {Cρ = Cρ} 
-    = begin
-      ⟦ Nσ ⟧ (⟦ Nσ' ⟧ (sub CΔᴰ γ Cρ))
-    ＝⟨ cong (λ s → ⟦ Nσ ⟧ s) (Nσ' .sub-⟦⟧) ⟩
-      ⟦ Nσ ⟧ (sub CΓᴰ (⟦ Nσ' ⟧ γ) Cρ)
-    ＝⟨ Nσ .sub-⟦⟧ ⟩
-      sub CΓᴰ' (⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ)) Cρ
-    ∎
-  N .cᴰ .Ctorsᴰ._∘ᴰ_ {CΓᴰ = CΓᴰ} {CΓᴰ' = CΓᴰ'} {Cσ} {CΔᴰ = CΔᴰ} {Cσ'} Nσ Nσ' .repr-⟦⟧ {γ = γ}
-    = begin
-      CΓᴰ' .repr (⟦ Nσ ⟧ (⟦ Nσ' ⟧ γ))
-    ＝⟨ Nσ .repr-⟦⟧ ⟩
-      (Cσ ∘ CΓᴰ .repr (⟦ Nσ' ⟧ γ))
-    ＝⟨ cong (Cσ ∘_) (Nσ' .repr-⟦⟧) ⟩
-      (Cσ ∘ (Cσ' ∘ CΔᴰ .repr γ))
-    ＝⟨ sym ∘assoc ⟩
-      ((Cσ ∘ Cσ') ∘ CΔᴰ .repr γ)
-    ∎
+  -- N .cᴰ .Ctorsᴰ.p∘,ᴰ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.id∘ᴰ {Cσᴰ} = {!   !}
+  -- N .cᴰ .Ctorsᴰ.p,qᴰ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.∘idᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.,∘ᴰ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.∘assocᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.lamᴰ = {!   !}
+  -- -- NTm.⟦ N .cᴰ .Ctorsᴰ.lamᴰ x ⟧ γ = {!   !}
 
-  N .cᴰ .Ctorsᴰ.εᴰ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.εηᴰ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.pᴰ = {!   !}
-
-  N .cᴰ .Ctorsᴰ._[_]ᴰ = {!   !}
-
-
-  NTm.⟦ N .cᴰ .Ctorsᴰ.qᴰ {CΓᴰ = NΓ} ⟧ {CΓ'} (pair γ t)
-    = coe (cong (λ t → CNf CΓ' t) (sym q[,])) (NTm.⟦ t .nf ⟧ γ)
-
-  N .cᴰ .Ctorsᴰ._,ᴰ_ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.p∘,ᴰ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.p,qᴰ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.,∘ᴰ = {!   !}
-
-  NTm.⟦ N .cᴰ .Ctorsᴰ.lamᴰ x ⟧ γ = {!   !}
-
-  N .cᴰ .Ctorsᴰ.appᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.appᴰ = {!   !}
   
   
-  N .cᴰ .Ctorsᴰ.[id]ᴰ = {!   !}
-  N .cᴰ .Ctorsᴰ.[∘]ᴰ = {!   !}
-  N .cᴰ .Ctorsᴰ.q[,]ᴰ = {!   !}
-  N .cᴰ .Ctorsᴰ.lam[]ᴰ = {!   !}
-  N .cᴰ .Ctorsᴰ.Πηᴰ = {!   !}
-  N .cᴰ .Ctorsᴰ.Πβᴰ = {!   !}
-      
+  -- N .cᴰ .Ctorsᴰ.[id]ᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.[∘]ᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.q[,]ᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.lam[]ᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.Πηᴰ = {!   !}
+  -- N .cᴰ .Ctorsᴰ.Πβᴰ = {!   !}
+       

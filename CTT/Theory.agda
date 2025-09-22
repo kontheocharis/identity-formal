@@ -60,7 +60,7 @@ module InSorts (sorts : Sorts) where
       lam[] : (lam Ca) [ Cσ ] ＝ lam (Ca [ Cσ ⁺ ])
 
       Πη : lam (app Ca) ＝ Ca 
-      Πβ : app (lam Ca) ＝ Ca
+      -- Πβ : app (lam Ca) ＝ Ca
       
 record Model : Set1 where
   field
@@ -137,7 +137,7 @@ module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
         lam[]ᴰ : (lamᴰ Caᴰ) [ Cσᴰ ]ᴰ ＝[ lam[] ]CTm lamᴰ (Caᴰ [ Cσᴰ ⁺ᴰ ]ᴰ)
 
         Πηᴰ : lamᴰ (appᴰ Caᴰ) ＝[ Πη ]CTm Caᴰ
-        Πβᴰ : appᴰ (lamᴰ Caᴰ) ＝[ Πβ ]CTm Caᴰ
+        -- Πβᴰ : appᴰ (lamᴰ Caᴰ) ＝[ Πβ ]CTm Caᴰ
       
 record Modelᴰ (m : Model) : Set2 where
   open Model m

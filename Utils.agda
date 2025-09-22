@@ -30,6 +30,9 @@ x ＝[ p ] y = coe p x ＝ y
 coh : ∀ {i} {A B : Set i} (x z : A) (y : B) {p} → x ＝[ p ] y → z ＝ x → z ＝[ p ] y
 coh _ _ _ r refl = r
 
+cohᴰ : ∀ {i} {A B : Set i} (x z : A) (y : B) {p} → x ＝[ p ] y → z ＝ x → z ＝[ p ] y
+cohᴰ _ _ _ r refl = r
+
 cong : ∀ {i j} {A : Set i} {B : Set j} (f : A → B) {a} {b} (p : a ＝ b) → f a ＝ f b
 cong f refl = refl
 
