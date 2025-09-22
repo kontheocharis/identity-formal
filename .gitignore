@@ -1,0 +1,29 @@
+# Lambdapi files
+*.lpo
+*.dk
+*.dko
+*.lp~
+*.dk~
+_build/
+.lambdapi/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
