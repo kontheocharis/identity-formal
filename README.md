@@ -1,4 +1,4 @@
-# Identity function formalisation
+# Formalisation for identity function detection in dependent type theory
 
 1. Copy the example environment file:
   ```bash
