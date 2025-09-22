@@ -1,5 +1,5 @@
 
-This is easy enough if we only have eta rules for eliminators There is
+This is easy enough if we only have eta rules for eliminators. There is
 definitely a tradeoff here, but we can use staging to deal with the rest of the
 reductions we'd want in the language. The only crucial mechanism that we can't
 exploit is *beta* reduction that becomes available to perform *as a result of erasure*.
@@ -14,9 +14,15 @@ app : Tm → Tm → Tm
 zero : Tm
 succ : Tm → Tm
 rec : (z : Tm) → (s : Tm → Tm → Tm) → Tm → Tm
+add : Tm → Tm → Tm
+mul : Tm → Tm → Tm
 
-recη : rec zero (λ x xᵖ . succ x) n = n
-recηᵖ : rec zero (λ x xᵖ . succ xᵖ) n = n
+recη : n = rec zero (λ x xᵖ . succ x) n
+recηᵖ : n = rec zero (λ x xᵖ . succ xᵖ) n
+
+add-def : add a b = rec b (λ x xᵖ . succ xᴾ) a
+mul-def : mul a b = rec zero (λ x xᵖ . add xᴾ b) a
+
 
 -- Normal forms of ℂ
 
