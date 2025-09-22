@@ -109,80 +109,80 @@ record Model : Set1 where
       
 -- Displayed model
 
-module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
-  open Sorts sorts
-  open InSorts sorts
+-- module _ (sorts : Sorts) (ctors : InSorts.Ctors sorts) where
+--   open Sorts sorts
+--   open InSorts sorts
 
-  record Sortsᴰ : Set1 where
-    field
-      LConᴰ : LCon → Set
-      LSubᴰ : ∀ {LΓ LΔ} → LConᴰ LΓ → LConᴰ LΔ → LSub LΓ LΔ → Set
-      LTyᴰ : ∀ {LΓ} → LConᴰ LΓ → LTy LΓ → Set
-      LTmᴰ : ∀ {LΓ LA} → (LΓᴰ : LConᴰ LΓ) → LTyᴰ LΓᴰ LA → LTm LΓ LA → Set
+--   record Sortsᴰ : Set1 where
+--     field
+--       LConᴰ : LCon → Set
+--       LSubᴰ : ∀ {LΓ LΔ} → LConᴰ LΓ → LConᴰ LΔ → LSub LΓ LΔ → Set
+--       LTyᴰ : ∀ {LΓ} → LConᴰ LΓ → LTy LΓ → Set
+--       LTmᴰ : ∀ {LΓ LA} → (LΓᴰ : LConᴰ LΓ) → LTyᴰ LΓᴰ LA → LTm LΓ LA → Set
 
-  open Ctors ctors
-  module InSortsᴰ (sortsᴰ : Sortsᴰ) where
-    open Sortsᴰ sortsᴰ
+--   open Ctors ctors
+--   module InSortsᴰ (sortsᴰ : Sortsᴰ) where
+--     open Sortsᴰ sortsᴰ
 
-    variable  
-      LΓᴰ LΓᴰ' LΔᴰ : LConᴰ _
-      LAᴰ LAᴰ' LBᴰ LBᴰ' : LTyᴰ _ _
-      Laᴰ Laᴰ' Lbᴰ Lbᴰ' : LTmᴰ _ _ _
-      Lσᴰ Lσᴰ' Lσᴰ'' : LSubᴰ _ _ _
+--     variable  
+--       LΓᴰ LΓᴰ' LΔᴰ : LConᴰ _
+--       LAᴰ LAᴰ' LBᴰ LBᴰ' : LTyᴰ _ _
+--       Laᴰ Laᴰ' Lbᴰ Lbᴰ' : LTmᴰ _ _ _
+--       Lσᴰ Lσᴰ' Lσᴰ'' : LSubᴰ _ _ _
 
-    infix 4 _＝[_]LSub_
-    _＝[_]LSub_ : LSubᴰ LΓᴰ LΓᴰ' Lσ → Lσ ＝ Lσ' → LSubᴰ LΓᴰ LΓᴰ' Lσ' → Prop
-    x ＝[ p ]LSub y = x ＝[ cong (LSubᴰ _ _) p ] y
+--     infix 4 _＝[_]LSub_
+--     _＝[_]LSub_ : LSubᴰ LΓᴰ LΓᴰ' Lσ → Lσ ＝ Lσ' → LSubᴰ LΓᴰ LΓᴰ' Lσ' → Prop
+--     x ＝[ p ]LSub y = x ＝[ cong (LSubᴰ _ _) p ] y
 
-    infix 4 _＝[_]LTy_
-    _＝[_]LTy_ : LTyᴰ LΓᴰ LA → LA ＝ LA' → LTyᴰ LΓᴰ LA' → Prop
-    x ＝[ p ]LTy y = x ＝[ cong (LTyᴰ _) p ] y
+--     infix 4 _＝[_]LTy_
+--     _＝[_]LTy_ : LTyᴰ LΓᴰ LA → LA ＝ LA' → LTyᴰ LΓᴰ LA' → Prop
+--     x ＝[ p ]LTy y = x ＝[ cong (LTyᴰ _) p ] y
     
-    Lcoeᴰ : {La : LTm LΓ LA}
-      → {La' : LTm LΓ LA'}
-      → (p : LA ＝ LA')
-      → LAᴰ ＝[ p ]LTy LAᴰ'
-      → La ＝[ p ]T La'
-      → LTmᴰ LΓᴰ LAᴰ La
-      → LTmᴰ LΓᴰ LAᴰ' La'
-    Lcoeᴰ p q r t = {!   !}
+--     Lcoeᴰ : {La : LTm LΓ LA}
+--       → {La' : LTm LΓ LA'}
+--       → (p : LA ＝ LA')
+--       → LAᴰ ＝[ p ]LTy LAᴰ'
+--       → La ＝[ p ]T La'
+--       → LTmᴰ LΓᴰ LAᴰ La
+--       → LTmᴰ LΓᴰ LAᴰ' La'
+--     Lcoeᴰ p q r t = {!   !}
 
-    infix 4 _＝[_][_][_]LTm_
-    _＝[_][_][_]LTm_ : {La : LTm LΓ LA}
-      → {La' : LTm LΓ LA'}
-      → LTmᴰ LΓᴰ LAᴰ La
-      → (p : LA ＝ LA')
-      → LAᴰ ＝[ p ]LTy LAᴰ'
-      → La ＝[ p ]T La'
-      → LTmᴰ LΓᴰ LAᴰ' La'
-      → Prop
-    x ＝[ q ][ p ][ r ]LTm y = x ＝[ {!  cong2 ? ?  !} ] y
+--     infix 4 _＝[_][_][_]LTm_
+--     _＝[_][_][_]LTm_ : {La : LTm LΓ LA}
+--       → {La' : LTm LΓ LA'}
+--       → LTmᴰ LΓᴰ LAᴰ La
+--       → (p : LA ＝ LA')
+--       → LAᴰ ＝[ p ]LTy LAᴰ'
+--       → La ＝[ p ]T La'
+--       → LTmᴰ LΓᴰ LAᴰ' La'
+--       → Prop
+--     x ＝[ q ][ p ][ r ]LTm y = x ＝[ {!  cong2 ? ?  !} ] y
     
-    record Ctorsᴰ : Set1 where
-      field 
-        ∙ᴰ : LConᴰ ∙
-        _▷ᴰ_ : (LΓᴰ : LConᴰ LΓ) → LTyᴰ LΓᴰ LA → LConᴰ (LΓ ▷ LA)
+--     record Ctorsᴰ : Set1 where
+--       field 
+--         ∙ᴰ : LConᴰ ∙
+--         _▷ᴰ_ : (LΓᴰ : LConᴰ LΓ) → LTyᴰ LΓᴰ LA → LConᴰ (LΓ ▷ LA)
 
-        idᴰ : LSubᴰ LΓᴰ LΓᴰ id
-        _∘ᴰ_ : LSubᴰ LΓᴰ LΓᴰ' Lσ → LSubᴰ LΔᴰ LΓᴰ Lσ' → LSubᴰ LΔᴰ LΓᴰ' (Lσ ∘ Lσ')
-        id∘ᴰ : idᴰ ∘ᴰ Lσᴰ ＝[ id∘ ]LSub Lσᴰ
-        ∘idᴰ : Lσᴰ ∘ᴰ idᴰ ＝[ ∘id ]LSub Lσᴰ
-        ∘assocᴰ : (Lσᴰ ∘ᴰ Lσᴰ') ∘ᴰ Lσᴰ'' ＝[ ∘assoc ]LSub Lσᴰ ∘ᴰ (Lσᴰ' ∘ᴰ Lσᴰ'')
+--         idᴰ : LSubᴰ LΓᴰ LΓᴰ id
+--         _∘ᴰ_ : LSubᴰ LΓᴰ LΓᴰ' Lσ → LSubᴰ LΔᴰ LΓᴰ Lσ' → LSubᴰ LΔᴰ LΓᴰ' (Lσ ∘ Lσ')
+--         id∘ᴰ : idᴰ ∘ᴰ Lσᴰ ＝[ id∘ ]LSub Lσᴰ
+--         ∘idᴰ : Lσᴰ ∘ᴰ idᴰ ＝[ ∘id ]LSub Lσᴰ
+--         ∘assocᴰ : (Lσᴰ ∘ᴰ Lσᴰ') ∘ᴰ Lσᴰ'' ＝[ ∘assoc ]LSub Lσᴰ ∘ᴰ (Lσᴰ' ∘ᴰ Lσᴰ'')
 
-        _[_]ᴰ : LTyᴰ LΔᴰ LA → (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTyᴰ LΓᴰ (LA [ Lσ ])
-        _[_]tᴰ : LTmᴰ LΔᴰ LAᴰ La → (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTmᴰ LΓᴰ (LAᴰ [ Lσᴰ ]ᴰ) (La [ Lσ ]t)
-        [id]ᴰ : LAᴰ [ idᴰ ]ᴰ ＝[ [id] ]LTy LAᴰ
-        [∘]ᴰ : LAᴰ [ Lσᴰ ∘ᴰ Lσᴰ' ]ᴰ ＝[ [∘] ]LTy (LAᴰ [ Lσᴰ ]ᴰ) [ Lσᴰ' ]ᴰ
-        [id]tᴰ : Laᴰ [ idᴰ ]tᴰ ＝[ [id] ][ [id]ᴰ ][ [id]t ]LTm Laᴰ
-        [∘]tᴰ : Laᴰ [ Lσᴰ ∘ᴰ Lσᴰ' ]tᴰ ＝[ [∘] ][ [∘]ᴰ ][ [∘]t ]LTm (Laᴰ [ Lσᴰ ]tᴰ) [ Lσᴰ' ]tᴰ
+--         _[_]ᴰ : LTyᴰ LΔᴰ LA → (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTyᴰ LΓᴰ (LA [ Lσ ])
+--         _[_]tᴰ : LTmᴰ LΔᴰ LAᴰ La → (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTmᴰ LΓᴰ (LAᴰ [ Lσᴰ ]ᴰ) (La [ Lσ ]t)
+--         [id]ᴰ : LAᴰ [ idᴰ ]ᴰ ＝[ [id] ]LTy LAᴰ
+--         [∘]ᴰ : LAᴰ [ Lσᴰ ∘ᴰ Lσᴰ' ]ᴰ ＝[ [∘] ]LTy (LAᴰ [ Lσᴰ ]ᴰ) [ Lσᴰ' ]ᴰ
+--         [id]tᴰ : Laᴰ [ idᴰ ]tᴰ ＝[ [id] ][ [id]ᴰ ][ [id]t ]LTm Laᴰ
+--         [∘]tᴰ : Laᴰ [ Lσᴰ ∘ᴰ Lσᴰ' ]tᴰ ＝[ [∘] ][ [∘]ᴰ ][ [∘]t ]LTm (Laᴰ [ Lσᴰ ]tᴰ) [ Lσᴰ' ]tᴰ
 
-        pᴰ : LSubᴰ (LΓᴰ ▷ᴰ LAᴰ) LΓᴰ p
-        qᴰ : LTmᴰ (LΓᴰ ▷ᴰ LAᴰ) (LAᴰ [ pᴰ ]ᴰ) q
-        _,ᴰ_ : (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTmᴰ LΓᴰ (LAᴰ [ Lσᴰ ]ᴰ) La → LSubᴰ LΓᴰ (LΔᴰ ▷ᴰ LAᴰ) (Lσ , La)
-        p∘,ᴰ : pᴰ ∘ᴰ (Lσᴰ ,ᴰ Laᴰ) ＝[ p∘, ]LSub Lσᴰ
-        p,qᴰ : (pᴰ {LΓᴰ = LΓᴰ} {LAᴰ = LAᴰ} ,ᴰ qᴰ) ＝[ p,q ]LSub idᴰ
-        ,∘ᴰ : (Lσᴰ ,ᴰ Laᴰ) ∘ᴰ Lσᴰ' ＝[ ,∘ ]LSub ((Lσᴰ ∘ᴰ Lσᴰ') ,ᴰ (Lcoeᴰ (sym [∘]) (hsym {!  [∘]ᴰ !}) refl (Laᴰ [ Lσᴰ' ]tᴰ)))
-        q[,]ᴰ : qᴰ [ Lσᴰ ,ᴰ Laᴰ ]tᴰ ＝[ trs (sym [∘]) (cong (LA [_]) p∘,) ][ trs (sym {!  [∘]ᴰ !}) {!   !}  ][ q[,] ]LTm Laᴰ
+--         pᴰ : LSubᴰ (LΓᴰ ▷ᴰ LAᴰ) LΓᴰ p
+--         qᴰ : LTmᴰ (LΓᴰ ▷ᴰ LAᴰ) (LAᴰ [ pᴰ ]ᴰ) q
+--         _,ᴰ_ : (Lσᴰ : LSubᴰ LΓᴰ LΔᴰ Lσ) → LTmᴰ LΓᴰ (LAᴰ [ Lσᴰ ]ᴰ) La → LSubᴰ LΓᴰ (LΔᴰ ▷ᴰ LAᴰ) (Lσ , La)
+--         p∘,ᴰ : pᴰ ∘ᴰ (Lσᴰ ,ᴰ Laᴰ) ＝[ p∘, ]LSub Lσᴰ
+--         p,qᴰ : (pᴰ {LΓᴰ = LΓᴰ} {LAᴰ = LAᴰ} ,ᴰ qᴰ) ＝[ p,q ]LSub idᴰ
+--         ,∘ᴰ : (Lσᴰ ,ᴰ Laᴰ) ∘ᴰ Lσᴰ' ＝[ ,∘ ]LSub ((Lσᴰ ∘ᴰ Lσᴰ') ,ᴰ (Lcoeᴰ (sym [∘]) (hsym {!  [∘]ᴰ !}) refl (Laᴰ [ Lσᴰ' ]tᴰ)))
+--         q[,]ᴰ : qᴰ [ Lσᴰ ,ᴰ Laᴰ ]tᴰ ＝[ trs (sym [∘]) (cong (LA [_]) p∘,) ][ trs (sym {!  [∘]ᴰ !}) {!   !}  ][ q[,] ]LTm Laᴰ
 
 --         εᴰ : LSubᴰ LΓᴰ ∙ᴰ ε
 --         εηᴰ : Lσᴰ ＝[ εη ]LSub εᴰ

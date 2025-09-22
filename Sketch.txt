@@ -1,0 +1,123 @@
+
+This is easy enough if we only have eta rules for eliminators
+There is definitely a tradeoff here, but we can use staging 
+
+-- Theory of ℂ
+
+Tm : Psh⁺ ℂ
+
+lam : (Tm → Tm) → Tm
+app : Tm → Tm → Tm
+
+zero : Tm
+succ : Tm → Tm
+rec : (z : Tm) → (s : Tm → Tm → Tm) → Tm → Tm
+
+recη : rec zero (λ x xᵖ . succ x) n = n
+recηᵖ : rec zero (λ x xᵖ . succ xᵖ) n = n
+
+-- Normal forms of ℂ
+
+Var : Tm → Psh⁺ ℂR
+
+Nf' : Tm → Psh ℂR
+lamᴺ : (∀ x . Var x → Nf' (f x)) → Nf' (lam f)
+appᴺ : Nf' f → Nf' x → Nf' (app f x)
+varᴺ : Var x → Nf' x
+zeroᴺ : Nf' zero 
+succᴺ : Nf' x → Nf' (succ x)
+recᴺ : (zᴺ : Nf' z)
+   → (sᴺ : ∀ x xᴾ . Var x → Var xᴾ → Nf' (s x xᴾ))
+   → Nf' n
+   → Nf' (rec z s n)
+   
+Ok : Nf' t → Psh ℂR
+lamᴼ : (∀ x v . Ok (fᴺ x v)) → Ok (lamᴺ fᴺ)
+appᴼ : Ok fᴺ → Ok xᴺ → Ok (appᴺ fᴺ xᴺ)
+varᴼ : Ok (varᴺ v)
+zeroᴼ : Ok zeroᴺ
+succᴼ : Ok iᴺ → Ok (succᴺ i)
+recᴼ : Ok zᴺ
+   → (∀ x xᴾ v vᴾ . Ok (sᴺ x xᴾ v vᴾ))
+   → Ok nᴺ
+   → ((zᴺ, sᴺ) ≠ (zeroᴺ, ∀ iᴺ iᴾᴺ. succ iᴺ)) → ((zᴺ, sᴺ) ≠ (zeroᴺ, ∀ iᴺ iᴾᴺ. succᴺ iᴾᴺ))      -- method conditions
+   → Ok (recᴺ zᴺ sᴺ nᴺ)
+
+Nf : Tm → Psh ℂR
+Nf t = (tᴺ : Nf' t) × Ok tᴺ
+
+nf : (t : Tm) → Nf t
+nf (lam f) =
+  (fᴺ, fᴼ) := nf f
+  (lamᴺ fᴺ, lamᴼ fᴼ)
+nf (app f x) =
+  (fᴺ, fᴼ) := nf f
+  (xᴺ, xᴼ) := nf x
+  (lamᴺ fᴺ, lamᴼ fᴼ)
+nf zero = (zeroᴺ, zeroᴼ)
+nf (succ i) =
+  (iᴺ, iᴼ) := nf i
+  (succᴺ iᴺ, succᴼ iᴼ)
+nf (rec z s n) =
+  (zᴺ, zᴼ) := nf z
+  (sᴺ, sᴼ) := nf s
+  (nᴺ, nᴼ) := nf n
+  case (zᴺ, sᴺ) of
+    (zeroᴺ, ∀ i iᴾ . succᴺ i) => (nᴺ, nᴼ) by recη
+    (zeroᴺ, ∀ i iᴾ . succᴺ iᴾ) => (nᴺ, nᴼ) by recηᴾ
+    _ where (z,s)≠(zero,succ), (z,s)≠(zero,succᴾ) => 
+      (recᴺ zᴺ sᴺ nᴺ, recᴼ zᴼ sᴼ nᴼ (z,s)≠(zero,succ) (z,s)≠(zero,succᴾ))
+
+
+
+
+
+
+
+
+--- OLD:
+
+-- Normal forms of ℂ (attempt 1)
+
+Var : Tm → Psh⁺ ℂR
+
+Base : (N', N : Tm → Psh ℂR) → Sig Tm (Psh ℂR)
+Base N' N = {
+    lamᴺ : (∀ x . Var x → N' (f x)) → N (lam f)
+    appᴺ : N' f → N' x → N (app f x)
+    varᴺ : Var x → N x
+  }
+
+Zero : (N : Tm → Psh ℂR) → Sig Tm (Psh ℂR)
+Zero N = { zeroᴺ : N zero }
+
+Succ : (N : Tm → Psh ℂR) → Sig Tm (Psh ℂR)
+Succ N = { succᴺ : N x → N (succ x) }
+
+Rec : (Nz, Ns, Nn, Nr : Tm → Psh ℂR) → Sig Tm (Psh ℂR)
+Rec Nz Ns Nn Nr = {
+    recᴺ : (zᴺ : Nz z)
+       → (sᴺ : ∀ x xᴾ . Var x → Var xᴾ → Ns (s x xᴾ))
+       → Nn n
+       → Nr (rec z s n)
+  }
+    
+Nf : Tm → Psh ℂR
+
+Nf\ℕ-F : (Nn, Nr : Tm → Psh ℂR) → Tm → Psh ℂR
+Nf\ℕ-F Nn Nr t =
+  ⟦ Base Nf Nr ⟧ t
+  + ⟦ Rec ⟦ Base Nr ⟧ ⟦ Base Nr ⟧ Nn Nr ⟧ t
+  + ⟦ Rec ⟦ Zero Nr ⟧ ⟦ Base Nr ⟧ Nn Nr ⟧ t
+  + ⟦ Rec ⟦ Base Nr ⟧ ⟦ Succ Nr ⟧ Nn Nr ⟧ t
+  + ⟦ Rec ⟦ Succ Nr ⟧ ⟦ Base Nr ⟧ Nn Nr ⟧ t
+  + ⟦ Rec ⟦ Base Nr ⟧ ⟦ Zero Nr ⟧ Nn Nr ⟧ t
+  + ⟦ Rec ⟦ Succ Nr ⟧ ⟦ Zero Nr ⟧ Nn Nr ⟧ t
+
+Nf\ℕ : Tm → Psh ℂR
+Nf\ℕ = μ N . Nfℕ-F N N
+
+Nf-F : (N : Tm → Psh ℂR) → Tm → Psh ℂR
+Nf-F N t = Nf\ℕ-F Nf\ℕ N t + ⟦ Zero N ⟧ t + ⟦ Succ N ⟧ t
+
+Nf = μ Nf-F
