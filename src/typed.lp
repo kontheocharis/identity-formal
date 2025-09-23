@@ -80,7 +80,7 @@ assert ⊢ lamEID (λ _ _ x , x) : _;
 
 // Nat identity is identity:
 assert ⊢ lamE (λ _ _ x , recE zeroE (λ _ _ x , succE x) x) : _;
-assert ⊢ lamE (λ _ _ x , recE zeroE (λ _ _ x , zeroE) x) : _;
+assert ⊢ lamEID (λ _ _ x , recE zeroE (λ _ _ x , succE x) x) : _;
 
 // Always zero is not identity:
 assert ⊢ lamE (λ _ _ x , recE zeroE (λ _ _ x , zeroE) x) : _;
