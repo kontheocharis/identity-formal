@@ -39,6 +39,22 @@ symbol appEID : Π [A] [B]
   [xC : TmC],
   TmE fL fC → TmE xL xC → TmE (appLID [A] [B] fL xL) xC;
 
+// Irrelevant functions
+
+constant symbol PiIrr : Π (A : Ty) , (TmL A → Ty) → Ty;
+
+symbol lamLIrr : Π [A] [B] , (Π (x : TmL A) , TmL (B x)) → TmL (PiID A B);
+symbol appLIrr : Π [A] [B] , TmL (PiIrr A B) → Π (x : TmL A) , TmL (B x);
+
+symbol lamEIrr : Π [A] [B]
+  [fL : (Π (x : TmL A) , TmL (B x))] 
+  [fC : TmC] ,
+  (Π xL , TmE (fL xL) fC) → TmE (lamLIrr fL) fC;
+symbol appEIrr : Π [A] [B]
+  [fL : TmL (PiIrr A B)]
+  [fC : TmC] ,
+  TmE fL fC → Π (xL : TmL A) , TmE (appLIrr [A] [B] fL xL) fC;
+
 // Nat
 
 constant symbol Nat : Ty;
