@@ -47,7 +47,7 @@ symbol lamLIrr : Π [A] [B] , (Π (x : TmL A) , TmL (B x)) → TmL (PiID A B);
 symbol appLIrr : Π [A] [B] , TmL (PiIrr A B) → Π (x : TmL A) , TmL (B x);
 
 symbol lamEIrr : Π [A] [B]
-  [fL : (Π (x : TmL A) , TmL (B x))] 
+  [fL : Π (x : TmL A) , TmL (B x)] 
   [fC : TmC] ,
   (Π xL , TmE (fL xL) fC) → TmE (lamLIrr fL) fC;
 symbol appEIrr : Π [A] [B]

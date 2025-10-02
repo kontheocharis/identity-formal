@@ -1,0 +1,6 @@
+name: identity-formal
+depend: standard-library
+include: .
+flags:
+  --cumulativity
+  --prop
