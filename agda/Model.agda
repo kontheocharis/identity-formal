@@ -23,6 +23,9 @@ sym refl = refl
 trs : ∀ {A : Set} {x y z : A} → x ＝ y → y ＝ z → x ＝ z
 trs refl refl = refl
 
+cong2 : ∀ {A B C : Set} (f : A → B → C) {x x' : A} {y y' : B} → x ＝ x' → y ＝ y' → f x y ＝ f x' y'
+cong2 f refl refl = refl
+
 just-inj : ∀ {A : Set} {x y : A} → just x ＝ just y → x ＝ y
 just-inj refl = refl
   
@@ -38,12 +41,17 @@ record Model : Set2 where
     SubL : ConL → ConL → Set
     TyL : ConL → Set1
     TmL : ∀ ΓL → TyL ΓL → Set
+
+    ∙L : ConL
+    _▷L_ : (ΓL : ConL) → TyL ΓL → ConL
     
     -- Computational
     ConC : Set
-    ∙C : ConC
     SubC : ConC → ConC → Set
     TmC : ConC → Set
+
+    ∙C : ConC
+    _▷C : ConC → ConC
     _[p*] : ∀ {ΓC} → TmC ∙C → TmC ΓC
     
     -- Total
@@ -52,10 +60,27 @@ record Model : Set2 where
     Ty : ∀ ΓL → TyL ΓL → Set1
     Tm : ∀ {ΓL ΓC TL} → Con ΓL ΓC → Ty ΓL TL → TmL ΓL TL → TmC ΓC → Set
     
+    ∙ : Con ∙L ∙C
+    _▷_ : ∀ {ΓL ΓC TL} → Con ΓL ΓC → Ty ΓL TL → Con (ΓL ▷L TL) (ΓC ▷C)
+    _▷0_ : ∀ {ΓL ΓC TL} → Con ΓL ΓC → TyL ΓL → Con (ΓL ▷L TL) ΓC
+    
+    -- Function types
+    ΠL : ∀ {ΓL} → (TL : TyL ΓL) → TyL (ΓL ▷L TL) → TyL ΓL
+    lamL : ∀ {ΓL TL UL} → TmL (ΓL ▷L TL) UL → TmL ΓL (ΠL TL UL)
+    appL : ∀ {ΓL TL UL} → TmL ΓL (ΠL TL UL) → TmL (ΓL ▷L TL) UL
+    βL : ∀ {ΓL TL UL} t → appL {ΓL} {TL} {UL} (lamL t) ＝ t
+    ηL : ∀ {ΓL TL UL} t → lamL {ΓL} {TL} {UL} (appL t) ＝ t
+    lamC : ∀ {ΓC} → TmC (ΓC ▷C) → TmC ΓC
+    appC : ∀ {ΓC} → TmC ΓC → TmC ΓC → TmC ΓC
+    
     -- Specialization types
     Spec : ∀ {ΓL TL} → Ty ΓL TL → TmC ∙C → Ty ΓL TL
     spec : ∀ {ΓL ΓC TL Γ T aL aC} → Tm {ΓL} {ΓC} {TL} Γ T aL (aC [p*]) → Tm Γ (Spec T aC) aL (aC [p*])
     unspec : ∀ {ΓL ΓC TL Γ T aL aC aC'} → Tm {ΓL} {ΓC} {TL} Γ (Spec T aC) aL aC' → Tm Γ T aL (aC [p*])
+    
+    -- Π : ∀ {ΓL TL UL} → Ty ΓL TL → Ty (ΓL ▷L TL) UL → Ty ΓL (ΠL TL UL)
+    -- lam : ∀ {ΓL ΓC TL UL tL tC} {Γ : Con ΓL ΓC} {T : Ty ΓL TL} {U : Ty (ΓL ▷L TL) UL}
+    --       → Tm (Γ ▷ T) U → Tm Γ (Π T U) (lamL {ΓL} {TL} {UL} tL) (lamC tC)
     
 Defined : ∀ {X} → Maybe X → Prop
 Defined {X} y = ∃[ x ∈ X ] (y ＝ just x)
@@ -127,8 +152,12 @@ module PCACombinators (A : PCA) where
   I : ∣ A ∣
 
   pair : ∣ A ∣ → ∣ A ∣ → ∣ A ∣
-  lam : ∣ A [ 1 ]∣ → ∣ A ∣
+  lambda : ∣ A [ suc n ]∣ → ∣ A [ n ]∣
+
   ΣA : (∣ A ∣^ n) → ∣ A ∣
+  ΣA {n = zero} f = I
+  ΣA {n = suc n} f = pair (ΣA (λ i → f (suc i))) (f zero)
+
   ΠA : (∣ A [ n ]∣) → ∣ A ∣
   
   ΠA-opn : ∀ {n a k} → app A (ΠA (opn n a)) k ＝ just (extract a)
@@ -167,7 +196,7 @@ module RealizabilityModel (A : PCA) where
     field
       ∣_∣ : ΓLᴿ → Set
       _ᴿᴿ : RRel (Σ[ γ ∈ ΓLᴿ ] ∣_∣ γ)
-      cart : ΓCᴿ -Cart _ᴿᴿ
+      -- cart : ΓCᴿ -Cart _ᴿᴿ
       
   open Conᴿ
 
@@ -208,8 +237,6 @@ module RealizabilityModel (A : PCA) where
   R .Model.ConC = ℕ
   R .Model.Con ΓLᴿ ΓCᴿ = Conᴿ ΓLᴿ ΓCᴿ
 
-  R .Model.∙C = zero
-
   R .Model.SubL ΓLᴿ ΔLᴿ = ΓLᴿ → ΔLᴿ
   R .Model.SubC ΓCᴿ ΔCᴿ = ∣ A [ ΓCᴿ ]∣^ ΔCᴿ
   R .Model.Sub Γᴿ Δᴿ σLᴿ σCᴿ = Subᴿ Γᴿ Δᴿ σLᴿ σCᴿ
@@ -219,10 +246,34 @@ module RealizabilityModel (A : PCA) where
 
   R .Model.TmC ΓCᴿ = ∣ A [ ΓCᴿ ]∣
 
-  (R Model.[p*]) {ΓC = n} t = opn n t
-
   R .Model.Ty ΓLᴿ TLᴿ = Tyᴿ ΓLᴿ TLᴿ
   R .Model.Tm Γᴿ Tᴿ aLᴿ aCᴿ = Tmᴿ Γᴿ Tᴿ aLᴿ aCᴿ
+  
+  R .Model.∙L = ⊤
+  (R Model.▷L ΓLᴿ) TLᴿ = Σ[ γ ∈ ΓLᴿ ] TLᴿ γ
+  
+  R .Model.∙C = zero
+  R Model.▷C = suc
+  
+  ∣ R .Model.∙ ∣ tt = ⊤
+  (R .Model.∙ ᴿᴿ) a (tt , tt) = a ＝ I
+  ∣ (R Model.▷ Γᴿ) Tᴿ ∣ (γ , t) = Σ[ γ' ∈ ∣ Γᴿ ∣ γ ] ∣ Tᴿ ∣ γ {Γᴿ = Γᴿ} γ' t
+  ((R Model.▷ Γᴿ) Tᴿ ᴿᴿ) a ((γ , t) , γ' , t')
+    = ∃[ γR ∈ ∣ A ∣ ] ∃[ tR ∈ ∣ A ∣ ]
+      ((a ＝ pair γR tR) AND ((Γᴿ ᴿᴿ) γR (γ , γ') AND (Tᴿ ᴿᴿ) γ {Γᴿ = Γᴿ} γ' tR (t , t')))
+  ∣ (R Model.▷0 Γᴿ) TLᴿ ∣ (γ , t) = ∣ Γᴿ ∣ γ
+  ((R Model.▷0 Γᴿ) TLᴿ ᴿᴿ) a ((γ , t) , γ') = (Γᴿ ᴿᴿ) a (γ , γ')
+
+  (R Model.[p*]) {ΓC = n} t = opn n t
+  
+  R .Model.ΠL TLᴿ ULᴿ γ = (t : TLᴿ γ) → ULᴿ (γ , t)
+  R .Model.lamL t γ t₁ = t (γ , t₁)
+  R .Model.appL x (γ , t) = x γ t
+  R .Model.βL t = refl
+  R .Model.ηL t = refl
+  
+  R .Model.lamC x = lambda x
+  R .Model.appC x y = {!   !}
 
   ∣ R .Model.Spec T c ∣ γ {ΓCᴿ = ΓCᴿ} {Γᴿ = Γᴿ} γ' t
     = Σ[ t' ∈ (∣ T ∣ γ {Γᴿ = Γᴿ} γ' t) ]
