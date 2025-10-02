@@ -2,6 +2,7 @@ module Model where
 
 open import Data.Nat hiding (_^_)
 open import Data.Fin
+open import Data.List
 open import Data.Unit
 open import Data.Maybe
 open import Data.Product hiding (∃)
@@ -16,7 +17,19 @@ data _AND_ (P Q : Prop) : Prop where
 data _＝_ {A : Set} (x : A) : A → Prop where
   refl : x ＝ x
   
+sym : ∀ {A : Set} {x y : A} → x ＝ y → y ＝ x
+sym refl = refl
+
+trs : ∀ {A : Set} {x y z : A} → x ＝ y → y ＝ z → x ＝ z
+trs refl refl = refl
+
+just-inj : ∀ {A : Set} {x y : A} → just x ＝ just y → x ＝ y
+just-inj refl = refl
+  
 syntax ∃ A (λ x → P) = ∃[ x ∈ A ] P
+
+_⇔_ : Prop → Prop → Prop
+P ⇔ Q = (P → Q) AND (Q → P)
 
 record Model : Set2 where
   field
@@ -44,12 +57,28 @@ record Model : Set2 where
     spec : ∀ {ΓL ΓC TL Γ T aL aC} → Tm {ΓL} {ΓC} {TL} Γ T aL (aC [p*]) → Tm Γ (Spec T aC) aL (aC [p*])
     unspec : ∀ {ΓL ΓC TL Γ T aL aC aC'} → Tm {ΓL} {ΓC} {TL} Γ (Spec T aC) aL aC' → Tm Γ T aL (aC [p*])
     
+Defined : ∀ {X} → Maybe X → Prop
+Defined {X} y = ∃[ x ∈ X ] (y ＝ just x)
 
 record PCA : Set1 where
   field
     ∣_∣ : Set
     app : ∣_∣ → ∣_∣ → Maybe ∣_∣
     S K : ∣_∣
+    
+  -- @@TODO
+  -- field
+  --   apps-nothing : ∀ x xs → apps x (nothing ∷ xs) ＝ nothing
+  --   apps-cong : ∀ x y xs → apps x xs ＝ nothing → apps x (y ∷ xs) ＝ nothing
+
+  --   K1-def : ∀ x → Defined (apps K (just x ∷ []))
+  --   K2-def : ∀ x y → Defined (apps K (just x ∷ just y ∷ []))
+
+  --   S1-def : ∀ x → Defined (apps S (just x ∷ []))
+  --   S2-def : ∀ x y → Defined (apps S (just x ∷ just y ∷ []))
+  --   S3-def : ∀ x y → Defined (apps S (just x ∷ just y ∷ just z ∷ [])) ⇔ Defined (app x y) (app x z)
+
+  --   K-id : ∀ x y → apps K (x ∷ y ∷ []) ＝ just x
 
 variable
   A : PCA
@@ -64,12 +93,12 @@ module PCAWithVars where
   data ∣_[_]∣ (A : PCA) : ℕ → Set where
     var : Fin n → ∣ A [ n ]∣
     lit : ∣ A ∣ → ∣ A [ n ]∣
-    app' : ∣ A [ n ]∣ → ∣ A [ n ]∣ → ∣ A [ n ]∣
+    app-suc : ∣ A [ suc n ]∣ → ∣ A [ suc n ]∣ → ∣ A [ suc n ]∣
     
   eval : ∣ A [ n ]∣ → (Fin n → ∣ A ∣?) → ∣ A ∣?
   eval (var x) σ = σ x
   eval (lit x) σ = just x
-  eval {A = A} (app' a b) σ with eval a σ | eval b σ
+  eval {A = A} (app-suc a b) σ with eval a σ | eval b σ
   ... | just f | just x = app A f x
   ... | _ | _ = nothing
   
@@ -82,9 +111,10 @@ module PCAWithVars where
   wk : (n : ℕ) → ∣ A [ n ]∣ → ∣ A [ suc n ]∣
   wk n (var x) = var (suc x)
   wk n (lit x) = lit x
-  wk n (app' a b) = app' (wk n a) (wk n b)
+  wk n (app-suc a b) = app-suc (wk n a) (wk n b)
   
-  extract : ∣ A [ zero ]∣ → ∣ A ∣?
+  extract : ∣ A [ zero ]∣ → ∣ A ∣
+  extract (lit x) = x
 
   opn : (n : ℕ) → ∣ A [ zero ]∣ → ∣ A [ n ]∣
   opn zero x = x
@@ -95,12 +125,13 @@ module PCACombinators (A : PCA) where
   
   -- @@TODO
   I : ∣ A ∣
+
   pair : ∣ A ∣ → ∣ A ∣ → ∣ A ∣
   lam : ∣ A [ 1 ]∣ → ∣ A ∣
   ΣA : (∣ A ∣^ n) → ∣ A ∣
   ΠA : (∣ A [ n ]∣) → ∣ A ∣
   
-  ΠA-opn : ∀ {n a k} → app A (ΠA (opn n a)) k ＝ extract a
+  ΠA-opn : ∀ {n a k} → app A (ΠA (opn n a)) k ＝ just (extract a)
   
   ΠΣA : (∣ A [ m ]∣^ n) → ∣ A ∣
 
@@ -121,8 +152,12 @@ module Realizability (A : PCA) where
   _-Cart_ : ∀ {X} → (n : ℕ) → RRel X → Prop
   _-Cart_ {X} n R = (x : X) → (a : ∣ A ∣) → R a x → (∃[ k ∈ ( ∣ A ∣^ n )] (a ＝ ΣA k))
   
+  TrackedAt : ∀ {X : Set} {Y : X → Set} (fR : ∣ A ∣) (x : X) (y : Y x)
+    (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
+  TrackedAt {X} {Y} fR x y RX RY = (a : ∣ A ∣) → RX a x → (app A fR a) ⊩[ RY x ] y
+  
   Tracked : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (fR : ∣ A ∣) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
-  Tracked {X} {Y} f fR RX RY = (x : X) → (a : ∣ A ∣) → RX a x → (app A fR a) ⊩[ RY x ] (f x)
+  Tracked {X} {Y} f fR RX RY = (x : X) → TrackedAt fR x (f x) RX RY
 
 module RealizabilityModel (A : PCA) where
 
@@ -189,14 +224,15 @@ module RealizabilityModel (A : PCA) where
   R .Model.Ty ΓLᴿ TLᴿ = Tyᴿ ΓLᴿ TLᴿ
   R .Model.Tm Γᴿ Tᴿ aLᴿ aCᴿ = Tmᴿ Γᴿ Tᴿ aLᴿ aCᴿ
 
-  ∣ R .Model.Spec T c ∣ γ {Γᴿ = Γᴿ} γ' t
+  ∣ R .Model.Spec T c ∣ γ {ΓCᴿ = ΓCᴿ} {Γᴿ = Γᴿ} γ' t
     = Σ[ t' ∈ (∣ T ∣ γ {Γᴿ = Γᴿ} γ' t) ]
-      ((γR : ∣ A ∣) → (Γᴿ ᴿᴿ) γR (γ , γ') → (app A {!   !} γR) ⊩[ (T ᴿᴿ) γ {Γᴿ = Γᴿ} γ' ] (t , t')) 
-  -- (R .Model.Spec T c ᴿᴿ) γ a (t , t' , p) = a ＝ ΠA c
-  -- R .Model.Spec T c .total γ (t , t' , p) = ΠA c , refl
+      (TrackedAt (ΠA (opn ΓCᴿ c)) (γ , γ') (t , t') (Γᴿ ᴿᴿ) (λ (γ , γ') → (T ᴿᴿ) γ {Γᴿ = Γᴿ} γ'))
+  (R .Model.Spec T c ᴿᴿ) γ {ΓCᴿ = ΓCᴿ} γ' a (t , t' , p) = a ＝ extract c
+  R .Model.Spec T c .total γ {ΓCᴿ = ΓCᴿ} γ' (t , t' , p) = extract c , refl
 
-  ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , let tᵀᴿ = (t ᵀᴿ) (γ , γ') in {!   !}
-  (R .Model.spec t ᵀᴿ) x a x₁ = {!   !}
+  ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , (t ᵀᴿ) (γ , γ')
+  (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) (γ , γ') a p with (t ᵀᴿ) (γ , γ') a p
+  ... | (a' , p' , tTR) = a' , p' , just-inj (trs (sym p') ΠA-opn)
 
-  ∣ R .Model.unspec t ∣ γ x = {!   !}
-  (R .Model.unspec t ᵀᴿ) x a x₁ = {!   !}
+  ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
+  (R .Model.unspec t ᵀᴿ) (γ , γ') a p = proj₂ (∣ t ∣ γ γ') a p
