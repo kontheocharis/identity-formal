@@ -24,7 +24,7 @@ record Model : Set2 where
     Con : ConL → ConC → Set1
     Sub : ∀ {ΓL ΔL ΓC ΔC} → Con ΓL ΓC → Con ΔL ΔC → SubL ΓL ΔL → SubC ΓC ΔC → Set
     Ty : ∀ ΓL → TyL ΓL → Set1
-    Tm : ∀ {ΓL ΓC AL} → Con ΓL ΓC → Ty ΓL AL → TmL ΓL AL → Set
+    Tm : ∀ {ΓL ΓC AL} → Con ΓL ΓC → Ty ΓL AL → TmL ΓL AL → TmC ΓC → Set
     
 
 record PCA : Set1 where
@@ -54,9 +54,6 @@ module PCAWithVars where
   eval {A = A} (app' a b) σ with eval a σ | eval b σ
   ... | just f | just x = app A f x
   ... | _ | _ = nothing
-  
-  -- eval-zero : ∣ A [ 0 ]∣ → ∣ A ∣
-  -- eval-zero x = {!   !}
   
   ∣_[_]∣^_ : (A : PCA) → ℕ → ℕ → Set
   ∣ A [ k ]∣^ l = Fin l → ∣ A [ k ]∣
@@ -132,10 +129,30 @@ module RealizabilityModel (A : PCA) where
     (σLᴿ : ΓLᴿ → ΔLᴿ)
     (σCᴿ : ∣ A [ ΓCᴿ ]∣^ ΔCᴿ) : Set where
     field
-      ∣_∣ : (γ : ΓLᴿ) → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣ γ ∣ γ')) (ΠΣA σCᴿ) (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
+      ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
+      _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) (ΠΣA σCᴿ) (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
 
   open Subᴿ
+
+  record Tyᴿ (ΓLᴿ : Set) (TLᴿ : ΓLᴿ → Set) : Set1 where
+    field
+      ∣_∣ : ∀ γ → TLᴿ γ → Set
+      _ᴿᴿ : ∀ γ → RRel (Σ[ t ∈ TLᴿ γ ] ∣_∣ γ t)
+      total : ∀ γ → Total (_ᴿᴿ γ)
+
+  open Tyᴿ
+
+  record Tmᴿ {ΓLᴿ ΓCᴿ TLᴿ}
+    (Γᴿ : Conᴿ ΓLᴿ ΓCᴿ)
+    (Tᴿ : Tyᴿ ΓLᴿ TLᴿ)
+    (aLᴿ : (γ : ΓLᴿ) → TLᴿ γ)
+    (aCᴿ : ∣ A [ ΓCᴿ ]∣) : Set where
+    field
+      ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Tᴿ ∣ γ (aLᴿ γ)
+      _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (ΠA aCᴿ) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ )
+
+
+  open Tmᴿ
 
   R : Model
 
@@ -152,5 +169,5 @@ module RealizabilityModel (A : PCA) where
 
   R .Model.TmC ΓCᴿ = ∣ A [ ΓCᴿ ]∣
 
-  R .Model.Ty ΓLᴿ TLᴿ = {!   !}
-  R .Model.Tm = {!   !}
+  R .Model.Ty ΓLᴿ TLᴿ = Tyᴿ ΓLᴿ TLᴿ
+  R .Model.Tm Γᴿ Tᴿ aLᴿ aCᴿ = Tmᴿ Γᴿ Tᴿ aLᴿ aCᴿ
