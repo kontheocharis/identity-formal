@@ -6,6 +6,7 @@ open import Data.List
 open import Data.Unit
 open import Data.Maybe
 open import Data.Product hiding (∃)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 
 data ∃ (A : Set) (P : A → Prop) : Prop where
@@ -179,6 +180,8 @@ module PCACombinators (A : PCA) where
 
   pair : ∣ A ∣ → ∣ A ∣ → ∣ A ∣
   lambda : ∣ A [ suc n ]∣ → ∣ A [ n ]∣
+
+  -- lambda' : ∣ A [ suc n ]∣ → ∣ A [ n ]∣
   
   app?- : ∣ A ∣? → ∣ A ∣ → ∣ A ∣?
   app?- nothing y = nothing
@@ -204,6 +207,9 @@ module Realizability (A : PCA) where
   
   _⊩[_]_ : ∀ {X} (a : ∣ A ∣?) (R : RRel X) (x : X) → Prop
   a ⊩[ R ] x = ∃[ a' ∈ (∣ A ∣)] ((a ＝ just a') AND (R a' x))
+  
+  _⊩[_]_by_ : ∀ {X} (a : ∣ A ∣?) (R : RRel X) (x : X) (p : Defined a) → Prop
+  a ⊩[ R ] x by p = let m = p in R {!   !} x
   
   Total : ∀ {X} → RRel X → Prop
   Total {X} R = (x : X) → ∃[ a ∈ ∣ A ∣ ] (R a x)
@@ -246,9 +252,9 @@ module RealizabilityModel (A : PCA) where
 
   record Tyᴿ (ΓLᴿ : Set) (TLᴿ : ΓLᴿ → Set) : Set1 where
     field
-      ∣_∣ : ∀ γ {ΓCᴿ} {Γᴿ : Conᴿ ΓLᴿ ΓCᴿ} (γ' : ∣ Γᴿ ∣ γ) → TLᴿ γ → Set
-      _ᴿᴿ : ∀ γ {ΓCᴿ} {Γᴿ} γ' → RRel (Σ[ t ∈ TLᴿ γ ] ∣_∣ γ {ΓCᴿ} {Γᴿ} γ' t)
-      total : ∀ γ {ΓCᴿ} {Γᴿ} γ' → Total (_ᴿᴿ γ {ΓCᴿ} {Γᴿ} γ')
+      ∣_∣ : ∀ γ → TLᴿ γ → Set
+      _ᴿᴿ : ∀ γ → RRel (Σ[ t ∈ TLᴿ γ ] ∣_∣ γ t)
+      total : ∀ γ  → Total (_ᴿᴿ γ)
 
   open Tyᴿ
 
@@ -258,8 +264,8 @@ module RealizabilityModel (A : PCA) where
     (aLᴿ : (γ : ΓLᴿ) → TLᴿ γ)
     (aCᴿ : ∣ A [ ΓCᴿ ]∣) : Set where
     field
-      ∣_∣ : ∀ γ (γ' : ∣ Γᴿ ∣ γ) → ∣ Tᴿ ∣ γ {ΓCᴿ} {Γᴿ} γ' (aLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (ΠA aCᴿ) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ {ΓCᴿ} {Γᴿ} γ')
+      ∣_∣ : ∀ γ (γ' : ∣ Γᴿ ∣ γ) → ∣ Tᴿ ∣ γ (aLᴿ γ)
+      _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (ΠA aCᴿ) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
 
 
   open Tmᴿ
@@ -291,21 +297,21 @@ module RealizabilityModel (A : PCA) where
   
   ∣ R .Model.∙ ∣ tt = ⊤
   (R .Model.∙ ᴿᴿ) a (tt , tt) = a ＝ I
-  ∣ (R Model.▷ Γᴿ) Tᴿ ∣ (γ , t) = Σ[ γ' ∈ ∣ Γᴿ ∣ γ ] ∣ Tᴿ ∣ γ {Γᴿ = Γᴿ} γ' t
+  ∣ (R Model.▷ Γᴿ) Tᴿ ∣ (γ , t) = Σ[ γ' ∈ ∣ Γᴿ ∣ γ ] ∣ Tᴿ ∣ γ t
   ((R Model.▷ Γᴿ) Tᴿ ᴿᴿ) a ((γ , t) , γ' , t')
     = ∃[ γR ∈ ∣ A ∣ ] ∃[ tR ∈ ∣ A ∣ ]
-      ((a ＝ pair γR tR) AND ((Γᴿ ᴿᴿ) γR (γ , γ') AND (Tᴿ ᴿᴿ) γ {Γᴿ = Γᴿ} γ' tR (t , t')))
+      ((a ＝ pair γR tR) AND ((Γᴿ ᴿᴿ) γR (γ , γ') AND (Tᴿ ᴿᴿ) γ tR (t , t')))
   ∣ (R Model.▷0 Γᴿ) TLᴿ ∣ (γ , t) = ∣ Γᴿ ∣ γ
   ((R Model.▷0 Γᴿ) TLᴿ ᴿᴿ) a ((γ , t) , γ') = (Γᴿ ᴿᴿ) a (γ , γ')
 
   (R Model.[p*]) {ΓC = n} t = opn n t
   
   R .Model._[_]TL TLᴿ σLᴿ γ = TLᴿ (σLᴿ γ)
-  ∣ (R Model.[ Tᴿ ]T) σLᴿ ∣ γ γ' a = ∣ Tᴿ ∣ (σLᴿ γ) {!   !} a
-  (R Model.[ Tᴿ ]T) σLᴿ ᴿᴿ = {!   !}
-  (R Model.[ Tᴿ ]T) σLᴿ .total = {!   !}
+  ∣ (R Model.[ Tᴿ ]T) σLᴿ ∣ γ = ∣ Tᴿ ∣ (σLᴿ γ)
+  ((R Model.[ Tᴿ ]T) σLᴿ ᴿᴿ) γ a (t , t') = (Tᴿ ᴿᴿ) (σLᴿ γ) a (t , t')
+  (R Model.[ Tᴿ ]T) σLᴿ .total γ = Tᴿ .total (σLᴿ γ)
 
-  R .Model._[_]L tLᴿ σLᴿ = {!   !}
+  R .Model._[_]L tLᴿ σLᴿ γ = tLᴿ (σLᴿ γ)
   R .Model.idL γ = γ
   R .Model._,L_ σLᴿ tLᴿ γ = σLᴿ γ , tLᴿ γ
 
@@ -318,18 +324,25 @@ module RealizabilityModel (A : PCA) where
   R .Model.lamC x = lambda x
   R .Model.appC x y = app' x x
   
-  R .Model.Π x x₁ = {!   !}
-  R .Model.lam x = {!   !}
-  R .Model.app x x₁ = {!   !}
+  ∣ R .Model.Π T U ∣ γ t
+    = Σ[ t' ∈ (∀ x (x' : ∣ T ∣ γ x) → ∣ U ∣ (γ , x) (t x)) ]
+        (∃[ a ∈ ∣ A ∣ ] Tracked' (λ (x , x') → t x , t' x x') (just a) ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t)))
+  (R .Model.Π T U ᴿᴿ) γ a (f , f' , (_ , p)) = Tracked' (λ (x , x') → f x , f' x x') ((just a)) ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
+  R .Model.Π T U .total γ (f , f' , (l , p)) = l , p
+  ∣ R .Model.lam t ∣ γ γ' = (λ x x' → ∣ t ∣ (γ , x) (γ' , x')) , {! extract (lambda ?) !} , {!   !}
+  R .Model.lam t ᵀᴿ = {!   !}
+  ∣ R .Model.app {tL = tL} f x ∣ γ γ' = ∣ f ∣ γ γ' .proj₁ (tL γ) (∣ x ∣ γ γ')
+  R .Model.app f x ᵀᴿ = {!   !}
 
-  -- ∣ R .Model.Spec T c n ∣ γ {ΓCᴿ = ΓCᴿ} {Γᴿ = Γᴿ} γ' t
-  --   = Σ[ t' ∈ (∣ T ∣ γ {Γᴿ = Γᴿ} γ' t) ]
-  --     (TrackedAt (ΠA (opn ΓCᴿ c)) (γ , γ') (t , t') (Γᴿ ᴿᴿ) (λ (γ , γ') → (T ᴿᴿ) γ {Γᴿ = Γᴿ} γ'))
-  -- (R .Model.Spec T c n ᴿᴿ) γ {ΓCᴿ = ΓCᴿ} γ' a (t , t' , p) = (c' : ∣ A ∣) → extract c ＝ just c' → a ＝ c'
-  -- R .Model.Spec T c n .total γ {ΓCᴿ = ΓCᴿ} γ' (t , t' , p) with extract c 
+  -- ∣ R .Model.Spec {ΓL = ΓLᴿ} T c n ∣ γ t
+  --   = Σ[ t' ∈ (∣ T ∣ γ t) ] (T ᴿᴿ) γ {!  n .fst !} (t , t')
+
+  --     -- (∀ {ΓCᴿ} {Γᴿ : Conᴿ ΓLᴿ ΓCᴿ} (γ' : ∣ Γᴿ ∣ γ) → TrackedAt (ΠA (opn ΓCᴿ c)) (γ , γ') (t , t') (Γᴿ ᴿᴿ) (λ (γ , γ') → (T ᴿᴿ) γ))
+  -- (R .Model.Spec T c n ᴿᴿ) γ a (t , t' , p) = (c' : ∣ A ∣) → extract c ＝ just c' → a ＝ c'
+  -- R .Model.Spec T c n .total γ (t , t' , p) with extract c 
   -- ... | just c' = c' , λ _ → λ { refl → refl }
   -- ... | nothing = I , λ _ → λ ()
-  -- ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , (t ᵀᴿ) .snd (γ , γ')
+  -- ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , let x = (t ᵀᴿ) in {!   !} -- .snd ? ? (γ , γ')
   -- (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .fst = (t ᵀᴿ) .fst
   -- (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .snd (γ , γ') a p with (t ᵀᴿ) .snd (γ , γ') a p
   -- ... | a' , p' , tTR = a' , p' , λ c' q → just-inj (trs (trs (sym p') ΠA-opn) q)
