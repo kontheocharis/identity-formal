@@ -217,15 +217,18 @@ module Realizability (A : PCA) where
   _-Cart_ : ∀ {X} → (n : ℕ) → RRel X → Prop
   _-Cart_ {X} n R = (x : X) → (a : ∣ A ∣) → R a x → (∃[ k ∈ ( ∣ A ∣^ n )] (a ＝ ΣA k))
   
-  TrackedAt : ∀ {X : Set} {Y : X → Set} (fR : ∣ A ∣?) (x : X) (y : Y x)
+  TrackedAt : ∀ {X : Set} {Y : X → Set} (fR : ∣ A ∣) (x : X) (y : Y x)
     (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
-  TrackedAt {X} {Y} fR x y RX RY = (a : ∣ A ∣) → RX a x → (app?- fR a) ⊩[ RY x ] y
+  TrackedAt {X} {Y} fR x y RX RY = (a : ∣ A ∣) → RX a x → (app A fR a) ⊩[ RY x ] y
   
-  Tracked' : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (fR : ∣ A ∣?) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
-  Tracked' {X} {Y} f fR RX RY = (x : X) → TrackedAt fR x (f x) RX RY
+  Tracked : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (fR : ∣ A ∣) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
+  Tracked {X} {Y} f fR RX RY = (x : X) → TrackedAt fR x (f x) RX RY
   
-  Tracked : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (fR : ∣ A ∣?) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
-  Tracked {X} {Y} f fR RX RY = Defined fR AND Tracked' f fR RX RY
+  DefTracked : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (fR : ∣ A ∣?) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
+  DefTracked {X} {Y} f fR RX RY = ∃[ fR' ∈ (∣ A ∣)] ((fR ＝ just fR') AND Tracked f fR' RX RY)
+  
+  ∃Tracked : ∀ {X : Set} {Y : X → Set} (f : (x : X) → Y x) (RX : RRel X) (RY : (x : X) → RRel (Y x)) → Prop
+  ∃Tracked {X} {Y} f RX RY = ∃[ fR ∈ (∣ A ∣)] Tracked f fR RX RY
 
 module RealizabilityModel (A : PCA) where
 
@@ -246,7 +249,7 @@ module RealizabilityModel (A : PCA) where
     (σCᴿ : ∣ A [ ΓCᴿ ]∣^ ΔCᴿ) : Set where
     field
       ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) (ΠΣA σCᴿ) (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
+      _ᵀᴿ : DefTracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) (ΠΣA σCᴿ) (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
 
   open Subᴿ
 
@@ -265,7 +268,7 @@ module RealizabilityModel (A : PCA) where
     (aCᴿ : ∣ A [ ΓCᴿ ]∣) : Set where
     field
       ∣_∣ : ∀ γ (γ' : ∣ Γᴿ ∣ γ) → ∣ Tᴿ ∣ γ (aLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (ΠA aCᴿ) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
+      _ᵀᴿ : DefTracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (ΠA aCᴿ) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
 
 
   open Tmᴿ
@@ -326,8 +329,8 @@ module RealizabilityModel (A : PCA) where
   
   ∣ R .Model.Π T U ∣ γ t
     = Σ[ t' ∈ (∀ x (x' : ∣ T ∣ γ x) → ∣ U ∣ (γ , x) (t x)) ]
-        (∃[ a ∈ ∣ A ∣ ] Tracked' (λ (x , x') → t x , t' x x') (just a) ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t)))
-  (R .Model.Π T U ᴿᴿ) γ a (f , f' , (_ , p)) = Tracked' (λ (x , x') → f x , f' x x') ((just a)) ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
+        (∃Tracked (λ (x , x') → t x , t' x x') ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t)))
+  (R .Model.Π T U ᴿᴿ) γ a (f , f' , (_ , p)) = Tracked (λ (x , x') → f x , f' x x') a ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
   R .Model.Π T U .total γ (f , f' , (l , p)) = l , p
   ∣ R .Model.lam t ∣ γ γ' = (λ x x' → ∣ t ∣ (γ , x) (γ' , x')) , {! extract (lambda ?) !} , {!   !}
   R .Model.lam t ᵀᴿ = {!   !}
