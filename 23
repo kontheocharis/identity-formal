@@ -54,7 +54,6 @@ record Model : Set2 where
     ConC : Set
     SubC : ConC → ConC → Set
     TmC : ConC → Set
-    NfC : ∀ {ΓC} → TmC ΓC → Set
 
     ∙C : ConC
     _▷C : ConC → ConC
@@ -70,38 +69,21 @@ record Model : Set2 where
     _▷_ : ∀ {ΓL ΓC TL} → Con ΓL ΓC → Ty ΓL TL → Con (ΓL ▷L TL) (ΓC ▷C)
     _▷0_ : ∀ {ΓL ΓC TL} → Con ΓL ΓC → TyL ΓL → Con (ΓL ▷L TL) ΓC
     
-    -- Substitution
-    _[_]TL : ∀ {ΓL ΔL} → TyL ΔL → SubL ΓL ΔL → TyL ΓL
-    _[_]T : ∀ {ΓL ΔL AL} → Ty ΔL AL → (σ : SubL ΓL ΔL) → Ty ΓL (AL [ σ ]TL)
-    _[_]L : ∀ {ΓL ΔL AL} → TmL ΔL AL → (σ : SubL ΓL ΔL) → TmL ΓL (AL [ σ ]TL)
-
-    idL : ∀ {ΓL} → SubL ΓL ΓL
-    _,L_ : ∀ {ΓL ΔL AL} → (σ : SubL ΓL ΔL) → TmL ΓL (AL [ σ ]TL) → SubL ΓL (ΔL ▷L AL)
-
-  ⟨_⟩L : ∀ {ΓL AL} → TmL ΓL AL → SubL ΓL (ΓL ▷L AL)
-  ⟨ t ⟩L = idL ,L (t [ idL ]L)
-    
-  field
     -- Function types
     ΠL : ∀ {ΓL} → (TL : TyL ΓL) → TyL (ΓL ▷L TL) → TyL ΓL
     lamL : ∀ {ΓL TL UL} → TmL (ΓL ▷L TL) UL → TmL ΓL (ΠL TL UL)
-    apL : ∀ {ΓL TL UL} → TmL ΓL (ΠL TL UL) → TmL (ΓL ▷L TL) UL
-    βL : ∀ {ΓL TL UL} t → apL {ΓL} {TL} {UL} (lamL t) ＝ t
-    ηL : ∀ {ΓL TL UL} t → lamL {ΓL} {TL} {UL} (apL t) ＝ t
+    appL : ∀ {ΓL TL UL} → TmL ΓL (ΠL TL UL) → TmL (ΓL ▷L TL) UL
+    βL : ∀ {ΓL TL UL} t → appL {ΓL} {TL} {UL} (lamL t) ＝ t
+    ηL : ∀ {ΓL TL UL} t → lamL {ΓL} {TL} {UL} (appL t) ＝ t
     lamC : ∀ {ΓC} → TmC (ΓC ▷C) → TmC ΓC
     appC : ∀ {ΓC} → TmC ΓC → TmC ΓC → TmC ΓC
-    Π : ∀ {ΓL TL UL} → Ty ΓL TL → Ty (ΓL ▷L TL) UL → Ty ΓL (ΠL TL UL)
-    lam : ∀ {ΓL ΓC TL UL tL tC Γ T U}
-      → Tm {ΓL ▷L TL} {ΓC ▷C} {UL} (Γ ▷ T) U tL tC → Tm Γ (Π T U) (lamL tL) (lamC tC)
-    app : ∀ {ΓL ΓC TL UL fL fC tL tC Γ T U}
-      → Tm {ΓL} {ΓC} {ΠL TL UL} Γ (Π T U) fL fC → Tm Γ T tL tC
-      → Tm Γ (U [ ⟨ tL ⟩L ]T) (apL fL [ ⟨ tL ⟩L ]L) (appC fC tC)
     
     -- Specialization types
-    Spec : ∀ {ΓL TL} → Ty ΓL TL → (c : TmC ∙C) → NfC c → Ty ΓL TL
-    spec : ∀ {ΓL ΓC TL Γ T aL aC nC} → Tm {ΓL} {ΓC} {TL} Γ T aL (aC [p*]) → Tm Γ (Spec T aC nC) aL (aC [p*])
-    unspec : ∀ {ΓL ΓC TL Γ T aL aC nC aC'} → Tm {ΓL} {ΓC} {TL} Γ (Spec T aC nC) aL aC' → Tm Γ T aL (aC [p*])
+    Spec : ∀ {ΓL TL} → Ty ΓL TL → TmC ∙C → Ty ΓL TL
+    spec : ∀ {ΓL ΓC TL Γ T aL aC} → Tm {ΓL} {ΓC} {TL} Γ T aL (aC [p*]) → Tm Γ (Spec T aC) aL (aC [p*])
+    unspec : ∀ {ΓL ΓC TL Γ T aL aC aC'} → Tm {ΓL} {ΓC} {TL} Γ (Spec T aC) aL aC' → Tm Γ T aL (aC [p*])
     
+    -- Π : ∀ {ΓL TL UL} → Ty ΓL TL → Ty (ΓL ▷L TL) UL → Ty ΓL (ΠL TL UL)
     -- lam : ∀ {ΓL ΓC TL UL tL tC} {Γ : Con ΓL ΓC} {T : Ty ΓL TL} {U : Ty (ΓL ▷L TL) UL}
     --       → Tm (Γ ▷ T) U → Tm Γ (Π T U) (lamL {ΓL} {TL} {UL} tL) (lamC tC)
     
@@ -278,7 +260,6 @@ module RealizabilityModel (A : PCA) where
   R .Model.TmL ΓLᴿ TLᴿ = (γ : ΓLᴿ) → TLᴿ γ
 
   R .Model.TmC ΓCᴿ = ∣ A [ ΓCᴿ ]∣
-  R .Model.NfC aC = Defined (ΠA aC)
 
   R .Model.Ty ΓLᴿ TLᴿ = Tyᴿ ΓLᴿ TLᴿ
   R .Model.Tm Γᴿ Tᴿ aLᴿ aCᴿ = Tmᴿ Γᴿ Tᴿ aLᴿ aCᴿ
@@ -300,41 +281,29 @@ module RealizabilityModel (A : PCA) where
 
   (R Model.[p*]) {ΓC = n} t = opn n t
   
-  R .Model._[_]TL TLᴿ σLᴿ γ = TLᴿ (σLᴿ γ)
-  ∣ (R Model.[ Tᴿ ]T) σLᴿ ∣ γ γ' a = ∣ Tᴿ ∣ (σLᴿ γ) {!   !} a
-  (R Model.[ Tᴿ ]T) σLᴿ ᴿᴿ = {!   !}
-  (R Model.[ Tᴿ ]T) σLᴿ .total = {!   !}
-
-  R .Model._[_]L tLᴿ σLᴿ = {!   !}
-  R .Model.idL γ = γ
-  R .Model._,L_ σLᴿ tLᴿ γ = σLᴿ γ , tLᴿ γ
-
   R .Model.ΠL TLᴿ ULᴿ γ = (t : TLᴿ γ) → ULᴿ (γ , t)
   R .Model.lamL t γ t₁ = t (γ , t₁)
-  R .Model.apL x (γ , t) = x γ t
+  R .Model.appL x (γ , t) = x γ t
   R .Model.βL t = refl
   R .Model.ηL t = refl
   
   R .Model.lamC x = lambda x
   R .Model.appC x y = app' x x
-  
-  R .Model.Π x x₁ = {!   !}
-  R .Model.lam x = {!   !}
-  R .Model.app x x₁ = {!   !}
 
-  -- ∣ R .Model.Spec T c n ∣ γ {ΓCᴿ = ΓCᴿ} {Γᴿ = Γᴿ} γ' t
-  --   = Σ[ t' ∈ (∣ T ∣ γ {Γᴿ = Γᴿ} γ' t) ]
-  --     (TrackedAt (ΠA (opn ΓCᴿ c)) (γ , γ') (t , t') (Γᴿ ᴿᴿ) (λ (γ , γ') → (T ᴿᴿ) γ {Γᴿ = Γᴿ} γ'))
-  -- (R .Model.Spec T c n ᴿᴿ) γ {ΓCᴿ = ΓCᴿ} γ' a (t , t' , p) = (c' : ∣ A ∣) → extract c ＝ just c' → a ＝ c'
-  -- R .Model.Spec T c n .total γ {ΓCᴿ = ΓCᴿ} γ' (t , t' , p) with extract c 
-  -- ... | just c' = c' , λ _ → λ { refl → refl }
-  -- ... | nothing = I , λ _ → λ ()
-  -- ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , (t ᵀᴿ) .snd (γ , γ')
-  -- (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .fst = (t ᵀᴿ) .fst
-  -- (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .snd (γ , γ') a p with (t ᵀᴿ) .snd (γ , γ') a p
-  -- ... | a' , p' , tTR = a' , p' , λ c' q → just-inj (trs (trs (sym p') ΠA-opn) q)
+  ∣ R .Model.Spec T c ∣ γ {ΓCᴿ = ΓCᴿ} {Γᴿ = Γᴿ} γ' t
+    = Σ[ t' ∈ (∣ T ∣ γ {Γᴿ = Γᴿ} γ' t) ]
+      (Defined (ΠA (opn ΓCᴿ c))
+        AND TrackedAt (ΠA (opn ΓCᴿ c)) (γ , γ') (t , t') (Γᴿ ᴿᴿ) (λ (γ , γ') → (T ᴿᴿ) γ {Γᴿ = Γᴿ} γ'))
+  (R .Model.Spec T c ᴿᴿ) γ {ΓCᴿ = ΓCᴿ} γ' a (t , t' , p) = (c' : ∣ A ∣) → extract c ＝ just c' → a ＝ c'
+  R .Model.Spec T c .B = ∀ (ΓC : ℕ) → Defined (ΠA (opn ΓC c))
+  R .Model.Spec T c .total γ {ΓCᴿ = ΓCᴿ} γ' (t , t' , p) with extract c 
+  ... | just c' = c' , λ _ → λ { refl → refl }
+  ... | nothing = I , λ _ → λ ()
+  ∣ R .Model.spec t ∣ γ γ' = ∣ t ∣ γ γ' , (t ᵀᴿ) .fst , (t ᵀᴿ) .snd (γ , γ')
+  (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .fst = (t ᵀᴿ) .fst
+  (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) .snd (γ , γ') a p with (t ᵀᴿ) .snd (γ , γ') a p
+  ... | a' , p' , tTR = a' , p' , λ c' q → just-inj (trs (trs (sym p') ΠA-opn) q)
 
-  -- ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
-  -- (R .Model.unspec {T = T} t ᵀᴿ) .fst = {!   !}
-  -- (R .Model.unspec t ᵀᴿ) .snd (γ , γ') a p = proj₂ (∣ t ∣ γ γ') a p
-  
+  ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
+  (R .Model.unspec {T = T} t ᵀᴿ) .fst = t .b {!   !}
+  (R .Model.unspec t ᵀᴿ) .snd (γ , γ') a p = {!   !} -- proj₂ (∣ t ∣ γ γ') a p
