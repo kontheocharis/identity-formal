@@ -132,6 +132,9 @@ module PASUtils (A : PAS) where
   _?∙?_ : ∀ (x y : Maybe ∣_∣) → Maybe ∣_∣
   _?∙?_ (just x) (just y) = x ∙ y
   _?∙?_ _ _ = nothing
+  
+  ?∙?-def : ∀ {x y} → (x↓ : x ↓) → (y↓ : y ↓) → (x ?∙? y) ＝ ((x ↓by x↓) ∙ (y ↓by y↓))
+  ?∙?-def (def x) (def y) = refl
 
 record PCA : Set1 where
   field
@@ -227,6 +230,14 @@ module PCACombinators (A : PCA) where
     let y-def = def-id (Λ'-def y) in
     id-def (>>=-just (cong₂ _>>=_ x-def (funext (λ y → def-id Sx-def)))
       (>>=-just y-def (def-id Sxy-def)))
+      
+  Λ : ∣ A [ 1 ]∣ → ∣_∣
+  Λ x = (extract (Λ' x)) ↓by (Λ'-def x)
+  
+  β : ∀ {x y} → eval (⌜ Λ x ⌝ ∙' ⌜ y ⌝) [] ＝ eval x (y ∷ [])
+  β {v zero} {y} = trans Sxyz-id (trans (?∙?-def Kx-def Kx-def) Kxy-id)
+  β {⌜ x ⌝} {y} = Kxy-id
+  β {x ∙' x₁} {y} = {!   !}
 
   pair' : ∣ A [ n ]∣ → ∣ A [ n ]∣ → ∣ A [ n ]∣
   pair' x y = Λ' ((v zero ∙' wk x) ∙' wk y)
@@ -370,8 +381,9 @@ module RealizabilityModel (A : PCA) where
   ∣ R .Model.Π T U ∣ γ t
     = Σ[ t' ∈ (∀ x (x' : ∣ T ∣ γ x) → ∣ U ∣ (γ , x) (t x)) ]
         (∃Tracked (λ (x , x') → t x , t' x x') ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t)))
-  -- (R .Model.Π T U ᴿᴿ) γ a (f , f' , (_ , p)) = Tracked (λ (x , x') → f x , f' x x') a ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
-  -- R .Model.Π T U .total γ (f , f' , (l , p)) = l , p
+  (R .Model.Π T U ᴿᴿ) γ (a ∷ []) (f , f' , (_ , p))
+    = Tracked (λ (x , x') → f x , f' x x') [ ⌜ a ⌝ ∙' v zero ] ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
+  R .Model.Π T U .total γ (f , f' , (l , p)) = [ {!   !} ] , {!  p !}
   -- ∣ R .Model.lam {tC = tC} record { ∣_∣ = ∣t∣ ; _ᵀᴿ = tᵀᴿ } ∣ γ γ'
   --   = ((λ x x' → ∣t∣ (γ , x) (γ' , x')) , {!   !} )
   --     -- (∃-rec (t ᵀᴿ) (λ a' p → a' , -- ΠAⱽ tC (a' , p .fst) ,
