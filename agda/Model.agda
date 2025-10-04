@@ -326,10 +326,10 @@ module RealizabilityModel (A : TCA) where
     = Σ[ t' ∈ (∣ T ∣ γ t) ] ([ extract c ] ⊩[ (T ᴿᴿ) γ ] (t , t'))
   (R .Model.Spec T c ᴿᴿ) γ a (t , t' , p) = a ＝ [ extract c ]
   R .Model.Spec T c .total γ (t , t' , p) = [ extract c ] , refl
-  ∣ R .Model.spec {ΓC = ΓC} {Γ = Γ} {T = T} {aC = aC} record { ∣_∣ = ∣t∣ ; _ᵀᴿ = tᵀᴿ } ∣ γ γ'
-    = ∣t∣ γ γ' ,
-        let tTR = tᵀᴿ (γ , γ') (Γ .total (γ , γ') .proj₁) (Γ .total (γ , γ') .proj₂)
-        in transp-⊩ {R = (T ᴿᴿ) γ} tTR (cong [_] (eval-opn aC))
+  ∣ R .Model.spec {ΓC = ΓC} {Γ = Γ} {T = T} {aC = aC} t ∣ γ γ'
+    = ∣ t ∣ γ γ' ,
+        let (γTR , γTotal) = Γ .total (γ , γ')
+        in transp-⊩ {R = (T ᴿᴿ) γ} ((t ᵀᴿ) (γ , γ') γTR γTotal) (cong [_] (eval-opn aC))
   (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) (γ , γ') a p = cong (_∷ []) (eval-opn aC)
   ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
   (R .Model.unspec {T = T} {aC = aC} t ᵀᴿ) (γ , γ') a p 
