@@ -198,6 +198,7 @@ module PCACombinators (A : PCA) where
   eval-opn : ∀ {n σ} x → eval {n} (opn x) σ ＝ eval x []
   eval-opn ⌜ x ⌝ = refl
   eval-opn (x ∙' x₁) = cong₂ _>>=_ (eval-opn x) (funext λ a → cong₂ _>>=_ (eval-opn x₁) refl)
+  {-# REWRITE eval-opn #-}
   
   _∙*_ : ∀ {n} → ∣ A [ n ]∣^ m → ∣ A ∣^ n → ∣ A ∣?^ m
   _∙*_ {zero} xs ys = []
@@ -221,28 +222,17 @@ module PCACombinators (A : PCA) where
   Λ'-def : (x : ∣ A [ 1 ]∣) → (extract (Λ' x)) ↓
   Λ'-def (v zero) = def I
   Λ'-def (⌜ x ⌝) = def ((K ∙ x) ↓by Kx-def)
-  Λ'-def (x ∙' y) = {!   !}
-    -- let x-def = def-id (Λ'-def x) in
-    -- let y-def = def-id (Λ'-def y) in
-    -- id-def (>>=-just (cong₂ _>>=_ x-def (funext (λ y → def-id Sx-def)))
-    --   (>>=-just y-def (def-id Sxy-def)))
+  Λ'-def (x ∙' y) =
+    let x-def = def-id (Λ'-def x) in
+    let y-def = def-id (Λ'-def y) in
+    id-def (>>=-just (cong₂ _>>=_ x-def (funext (λ y → def-id Sx-def)))
+      (>>=-just y-def (def-id Sxy-def)))
 
   pair' : ∣ A [ n ]∣ → ∣ A [ n ]∣ → ∣ A [ n ]∣
   pair' x y = Λ' ((v zero ∙' wk x) ∙' wk y)
 
   pair : ∣_∣ → ∣_∣ → ∣_∣
   pair a b = (extract (pair' ⌜ a ⌝ ⌜ b ⌝)) ↓by (Λ'-def ((v zero ∙' wk ⌜ a ⌝) ∙' wk ⌜ b ⌝))
-
---   Λ* : (∣ A [ n ]∣) → ∣ A ∣
---   Λ* {n = zero} x = extract x
---   Λ* {n = suc n} x = Λ* (Λ' x)
-
---   pair* : ∣ A ∣^ n → ∣ A ∣
---   pair* {zero} k = i
---   pair* {suc n} (k ∷ ks) = pair k (pair* {n} ks)
-
---   pair*-Λ* : (∣ A [ m ]∣^ n) → ∣ A ∣
---   pair*-Λ* k = pair* (Data.Vec.map Λ* k)
 
 module Realizability (A : PCA) where
   open PCA public
@@ -395,17 +385,16 @@ module RealizabilityModel (A : PCA) where
 
   ∣ R .Model.Spec {ΓL = ΓLᴿ} T c ∣ γ t
     = Σ[ t' ∈ (∣ T ∣ γ t) ] ([ extract c ] !⊩[ (T ᴿᴿ) γ ] (t , t'))
-  (R .Model.Spec T c ᴿᴿ) γ a (t , t' , p) = ∀ c↓ → a ＝ [ (extract c) ↓by c↓ ]
-  R .Model.Spec T c .total γ (t , t' , p) with extract c
-  ... | nothing = [ I ] , λ ()
-  ... | just c' = [ c' ] , λ { (def _) → refl }
+  (R .Model.Spec T c ᴿᴿ) γ a (t , t' , p) = extract c ＝ just (Data.Vec.head a)
+  R .Model.Spec T c .total γ (t , t' , (c↓ ∷ []) , p) = [ _ ↓by c↓ ] , def-id c↓
   ∣ R .Model.spec {ΓC = ΓC} {Γ = Γ} {T = T} {aC = aC} t ∣ γ γ'
     = ∣ t ∣ γ γ' ,
-        let (γTR , γTotal) = Γ .total (γ , γ') in {!   !}
-        -- transp-⊩ {R = (T ᴿᴿ) γ} ((t ᵀᴿ) (γ , γ') γTR γTotal) (cong [_] (eval-opn aC))
-  (R .Model.spec {ΓC = ΓC} {aC = aC} t ᵀᴿ) (γ , γ') a p = {!   !} , {!   !} -- cong (_∷ []) (eval-opn aC)
+        let (γTR , γTotal) = Γ .total (γ , γ') in 
+        (t ᵀᴿ) (γ , γ') γTR γTotal
+  (R .Model.spec {ΓC = ΓC} {Γ = Γ} {aC = aC} t ᵀᴿ) (γ , γ') a p
+    with Γ .total (γ , γ')
+  ... | (γTR , γTotal) with (t ᵀᴿ) (γ , γ') γTR γTotal
+  ... | (aC↓ ∷ [] , tTotal) = aC↓ ∷ [] , def-id aC↓
   ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
-  (R .Model.unspec {T = T} {aC = aC} t ᵀᴿ) (γ , γ') a p 
-    = (let _ , m , _ = ∣ t ∣ γ γ' in let q =  (sym (eval-opn aC)) in subst (_↓) q (VecAll.head m)) ∷ [] ,
-      transp-⊩ {R = (T ᴿᴿ) γ} (proj₂ (proj₂ (∣ t ∣ γ γ'))) ({!   !}) -- cong [_] (sym (eval-opn aC)))
+  (R .Model.unspec {T = T} {aC = aC} t ᵀᴿ) (γ , γ') a p = ∣ t ∣ γ γ' .proj₂
   
