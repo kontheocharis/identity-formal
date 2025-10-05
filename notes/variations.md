@@ -91,4 +91,13 @@ special: they are the ones whose substitution calculus does not posess any
 sub-structuctural properties. One example is QTT over the trivial semiring, but
 this is not interesting because it is just MLTT. The other example is over the
 semiring `{0, ω}`, which is the type theory Agda is based on, and leads to a
-notion of computational irrelevance.
+notion of computational irrelevance. Let's see how that works.
+
+The syntax of QTT is a model of `0->1`-layered type theory. In fact, the syntax
+is isomorphic to the initial `0->1`-layered CwF (in both cases, we do not
+include any type formers). However, the categories of models are not the same:
+`0->1`-layered type theory has more models because it allows different types in
+level 0 and level 1, while QTT requires that these are the same. 
+
+## First-class extraction with layered type theory
+
