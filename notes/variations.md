@@ -21,7 +21,7 @@ There is a category `CwF` of categories with families and strict morphisms betwe
 A layered CwF is a diagram of CwFs, given by:
 
 - A small 'index' category `I`
-- A functor `T : I → CwF`
+- A functor `T : I^op → CwF`
 
 > This is a similar but weaker notion than that of models of 'modal type theory'
 > in the sense of Gratzer et al, in the sense that we do not require modalities
