@@ -193,6 +193,9 @@ module PCACombinators (A : PCA) where
   
   extract : ∣ A [ zero ]∣ → ∣ A ∣?
   extract m = eval m []
+  
+  extract* : ∀ {n} → ∣ A [ zero ]∣^ n → ∣ A ∣?^ n
+  extract* m = Data.Vec.map (λ x → eval x []) m
 
   opn : ∣ A [ zero ]∣ → ∣ A [ n ]∣
   opn ⌜ x ⌝ = ⌜ x ⌝
@@ -244,6 +247,8 @@ module PCACombinators (A : PCA) where
 
   pair : ∣_∣ → ∣_∣ → ∣_∣
   pair a b = (extract (pair' ⌜ a ⌝ ⌜ b ⌝)) ↓by (Λ'-def ((v zero ∙' wk ⌜ a ⌝) ∙' wk ⌜ b ⌝))
+  
+
 
 module Realizability (A : PCA) where
   open PCA public
@@ -278,7 +283,7 @@ module Realizability (A : PCA) where
 
 module RealizabilityModel (A : PCA) where
 
-  open Realizability A
+  open Realizability A public
 
   record Conᴿ (ΓLᴿ : Set) (ΓCᴿ : ℕ) : Set1 where
     field
@@ -298,7 +303,7 @@ module RealizabilityModel (A : PCA) where
       ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
       _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) σCᴿ (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
 
-  open Subᴿ
+  open Subᴿ public
 
   record Tyᴿ (ΓLᴿ : Set) (TLᴿ : ΓLᴿ → Set) : Set1 where
     field
@@ -306,7 +311,7 @@ module RealizabilityModel (A : PCA) where
       _ᴿᴿ : ∀ γ → RRel 1 (Σ[ t ∈ TLᴿ γ ] ∣_∣ γ t)
       total : ∀ γ  → Total (_ᴿᴿ γ)
 
-  open Tyᴿ
+  open Tyᴿ public
 
   record Tmᴿ {ΓLᴿ ΓCᴿ TLᴿ}
     (Γᴿ : Conᴿ ΓLᴿ ΓCᴿ)
@@ -318,7 +323,7 @@ module RealizabilityModel (A : PCA) where
       _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) [ aCᴿ ] (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
 
 
-  open Tmᴿ
+  open Tmᴿ public
 
   R : Model
 
@@ -383,7 +388,7 @@ module RealizabilityModel (A : PCA) where
         (∃Tracked (λ (x , x') → t x , t' x x') ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t)))
   (R .Model.Π T U ᴿᴿ) γ (a ∷ []) (f , f' , (_ , p))
     = Tracked (λ (x , x') → f x , f' x x') [ ⌜ a ⌝ ∙' v zero ] ((T ᴿᴿ) γ) (λ (t , t') → (U ᴿᴿ) (γ , t))
-  R .Model.Π T U .total γ (f , f' , (l , p)) = [ {!   !} ] , {!  p !}
+  -- R .Model.Π T U .total γ (f , f' , (l , p)) = [ {!   !} ] , {!  p !}
   -- ∣ R .Model.lam {tC = tC} record { ∣_∣ = ∣t∣ ; _ᵀᴿ = tᵀᴿ } ∣ γ γ'
   --   = ((λ x x' → ∣t∣ (γ , x) (γ' , x')) , {!   !} )
   --     -- (∃-rec (t ᵀᴿ) (λ a' p → a' , -- ΠAⱽ tC (a' , p .fst) ,
@@ -410,3 +415,35 @@ module RealizabilityModel (A : PCA) where
   ∣ R .Model.unspec t ∣ γ γ' = proj₁ (∣ t ∣ γ γ')
   (R .Model.unspec {T = T} {aC = aC} t ᵀᴿ) (γ , γ') a p = ∣ t ∣ γ γ' .proj₂
   
+  
+module Results (A : PCA) where
+  open RealizabilityModel A
+  open Model R
+  
+  -- The interpretation of a term in the empty context
+  -- produces a defined element of the PCA
+  lem1 : ∀ {TL} {T : Ty ∙L TL} {c t}
+    → Tm (∙) T t c
+    → extract c ↓
+  lem1 t with el ∷ [] , tr ← (t ᵀᴿ) (tt , tt) [] tt = el
+
+  -- In particular, every Spec term in the empty context
+  -- is annotated by a defined element of the PCA
+  lem2 : ∀ {TL} {T : Ty ∙L TL} {c c' t}
+    → Tm (∙) (Spec T c) t c'
+    → extract c ↓
+  lem2 t = lem1 (unspec t)
+
+  -- The 'meaning' interpretation of a term in the empty context
+  -- is tracked by its PCA element
+  lem3 : ∀ {TL} {T : Ty ∙L TL} {c t}
+    → (t' : Tm (∙) T t c)
+    → [ extract c ↓by lem1 t' ] ⊩[ (T ᴿᴿ) tt ] (t tt , ∣ t' ∣ tt tt)
+  lem3 t' with el ∷ [] , tr ← (t' ᵀᴿ) (tt , tt) [] tt = tr
+
+  -- So for a Spec term in the empty context,
+  -- its annotated PCA element tracks its meaning interpretation
+  lem4 : ∀ {TL} {T : Ty ∙L TL} {c c' t}
+    → (t' : Tm (∙) (Spec T c) t c')
+    → [ extract c ↓by lem2 t' ] ⊩[ (T ᴿᴿ) tt ] (t tt , ∣ unspec t' ∣ tt tt)
+  lem4 t = lem3 (unspec t)
