@@ -34,7 +34,6 @@ assertnot ⊢ lam (λ x , rec zero (λ x , zero) x) ≡ lam (λ x , x);
 // Recognising addition
 assert ⊢ lam (λ x , lam (λ y , rec y (λ z , succ z) x)) ≡ lam (λ x , lam (λ y , add y x));
 
-
 // Binary recursor
 symbol rec2 : Π (zz : TmC) (zs : TmC) (sz : TmC) (ss : TmC → TmC) , TmC → TmC → TmC;
 
