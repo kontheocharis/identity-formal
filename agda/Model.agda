@@ -37,6 +37,7 @@ record TT-Comp : Set2 where
     pC : ∀ {ΓC} → SubC (ΓC ▷C) ΓC
     qC : ∀ {ΓC} → TmC (ΓC ▷C)
     _,C_ : ∀ {ΓC ΔC} → (σ : SubC ΓC ΔC) → TmC ΓC → SubC ΓC (ΔC ▷C)
+    ,∘C : ∀ {ΓC ΔC ΘC} {σ : SubC ΓC ΔC} {σ' : SubC ΘC ΓC} {t} → (σ ,C t) ∘C σ' ≡ (σ ∘C σ') ,C (t [ σ' ]C)
     pC,qC : ∀ {ΓC} → (pC {ΓC} ,C qC) ≡ idC
     pC∘, : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → pC ∘C (σ ,C t) ≡ σ
     qC[,] : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → qC [ σ ,C t ]C ≡ t
@@ -104,6 +105,11 @@ record TT-Logic : Set2 where
       → A [ σ ∘L τ ]TL ≡ (A [ σ ]TL) [ τ ]TL
     [∘]L : ∀ {ΓL ΔL ΘL AL} {t : TmL ΘL AL} {σ : SubL ΔL ΘL} {τ : SubL ΓL ΔL}
       → t [ σ ∘L τ ]L ≡[ cong (TmL ΓL) [∘]TL ] (t [ σ ]L) [ τ ]L
+  
+  coeL : ∀ {ΓL AL BL} → AL ≡ BL → TmL ΓL AL → TmL ΓL BL
+  coeL p t = subst (TmL _) p t
+      
+  field
       
     -- Terminal object
     ∙L : ConL
@@ -115,6 +121,8 @@ record TT-Logic : Set2 where
     pL : ∀ {ΓL AL} → SubL (ΓL ▷L AL) ΓL
     qL : ∀ {ΓL AL} → TmL (ΓL ▷L AL) (AL [ pL ]TL)
     _,L_ : ∀ {ΓL ΔL AL} → (σ : SubL ΓL ΔL) → TmL ΓL (AL [ σ ]TL) → SubL ΓL (ΔL ▷L AL)
+    ,L∘ : ∀ {ΓL ΔL ΘL} {AL : TyL ΔL} {σ : SubL ΓL ΔL} {σ' : SubL ΘL ΓL} {t : TmL ΓL (AL [ σ ]TL)}
+      → (σ ,L t) ∘L σ' ≡ (σ ∘L σ') ,L coeL (sym [∘]TL) (t [ σ' ]L)
     pL,qL : ∀ {ΓL AL} → (pL {ΓL} {AL} ,L qL) ≡ idL
     pL∘, : ∀ {ΓL ΔL AL} {σ : SubL ΓL ΔL} {t : TmL ΓL (AL [ σ ]TL)}
       → pL ∘L (σ ,L t) ≡ σ
@@ -144,39 +152,37 @@ record TT-Logic : Set2 where
     ηL : ∀ {ΓL TL UL} t → lamL {ΓL} {TL} {UL} (apL t) ≡ t
     
     -- Universe
-    U : ∀ {ΓL} → TyL ΓL
-    U[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → U [ σ ]TL ≡ U
+    UL : ∀ {ΓL} → TyL ΓL
+    UL[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → UL [ σ ]TL ≡ UL
     
-    El : ∀ {ΓL} → TmL ΓL U → TyL ΓL
-    El[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} {a : TmL ΓL U}
-      → (El a) [ σ ]TL ≡ El (subst (TmL _) U[] (a [ σ ]L))
+    ElL : ∀ {ΓL} → TmL ΓL UL → TyL ΓL
+    ElL[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} {a : TmL ΓL UL}
+      → (ElL a) [ σ ]TL ≡ ElL (subst (TmL _) UL[] (a [ σ ]L))
       
     -- Natural numbers
-    Nat : ∀ {ΓL} → TyL ΓL
-    Nat[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → Nat [ σ ]TL ≡ Nat
-    zeroL : ∀ {ΓL} → TmL ΓL Nat
-    zeroL[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → (zeroL {ΓL}) [ σ ]L ≡[ cong (TmL _) Nat[] ] zeroL
-    succL : ∀ {ΓL} → TmL ΓL Nat → TmL ΓL Nat
+    NatL : ∀ {ΓL} → TyL ΓL
+    NatL[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → NatL [ σ ]TL ≡ NatL
+    zeroL : ∀ {ΓL} → TmL ΓL NatL
+    zeroL[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → (zeroL {ΓL}) [ σ ]L ≡[ cong (TmL _) NatL[] ] zeroL
+    succL : ∀ {ΓL} → TmL ΓL NatL → TmL ΓL NatL
     succL[] : ∀ {ΓL ΔL t} {σ : SubL ΔL ΓL}
-      → (succL {ΓL} t) [ σ ]L ≡[ cong (TmL _) Nat[] ] succL (subst (TmL _) Nat[] (t [ σ ]L))
+      → (succL {ΓL} t) [ σ ]L ≡[ cong (TmL _) NatL[] ] succL (coeL NatL[] (t [ σ ]L))
 
-    elim-Nat : ∀ {ΓL} → (P : TyL (ΓL ▷L Nat))
-      → TmL ΓL (P [ ⟨ zeroL ⟩L ]TL)
-      → TmL ((ΓL ▷L Nat) ▷L P)
-          (P [ (pL ∘L pL) ,L
-          subst (TmL _) (sym Nat[])
-            (succL (subst (TmL _) (trans ((sym [∘]TL)) Nat[]) (qL [ pL ]L))) ]TL)
-      → (n : TmL ΓL Nat)
-      → TmL ΓL (P [ ⟨ n ⟩L ]TL)
-    elim-Nat[] : ∀ {ΓL ΔL P z s n} {σ : SubL ΔL ΓL}
-      → (elim-Nat {ΓL} P z s n) [ σ ]L
-        ≡[ {!   !} ]
-        elim-Nat {ΔL}
-          (P [ subst (λ q → SubL (_ ▷L q) (_ ▷L _)) Nat[] (σ ⁺L) ]TL)
-          (subst (TmL _) {!   !} (z [ σ ]L))
-          {!   !}
-          {!   !}
 
+    -- We should really have the proper eliminator but we don't do it here
+    -- because the substitution calculus gets out of hand.
+    recL : ∀ {ΓL} → (P : TyL ΓL)
+      → TmL ΓL P
+      → TmL ((ΓL ▷L NatL) ▷L (P [ pL ]TL)) (P [ pL ∘L pL ]TL)
+      → (n : TmL ΓL NatL)
+      → TmL ΓL P
+    recL[] : ∀ {ΓL ΔL P z s n} {σ : SubL ΔL ΓL}
+      → (recL {ΓL} P z s n) [ σ ]L
+        ≡
+        recL {ΔL} (P [ σ ]TL) (z [ σ ]L)
+        (let m = s [ {!   !} ,L {!   !} ]L in {!  m !})
+        (coeL NatL[] (n [ σ ]L))
+          
 
 
 -- record TT : Set2 where
