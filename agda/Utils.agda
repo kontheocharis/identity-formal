@@ -13,6 +13,11 @@ postulate
 
 {-# BUILTIN REWRITE _≡_ #-}
 
+infix 4 _≡[_]_
+
+_≡[_]_ : ∀ {i} {A B : Set i} (a : A) (p : A ≡ B) (b : B) → Set i
+_≡[_]_ {i} {A} {B} a p b = subst (λ s → s) p a ≡ b
+
 pure : ∀ {A : Set} → A → Maybe A
 pure = just
 
