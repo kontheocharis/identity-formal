@@ -29,9 +29,9 @@ A layered CwF is a diagram of CwFs, given by:
 
 A layered type theory is a type theory which has layered CwFs as models.
 
-Unfortunately, nice logical frameworks such as SOGATs do not suffice to produce
-all layered CwF models. It would be nice to have a generalisation of SOGATs for
-this.
+Unfortunately, nice logical frameworks such as SOGATs, or representable map
+categories, do not suffice to produce all layered CwF models. It would be nice
+to have a generalisation of SOGATs for this.
 
 For an index category `I`, we have a category of models `LMod I` of layered type
 theory, where the objects are `I`-diagrams of CwFs and the morphisms are
@@ -82,6 +82,9 @@ out of it. For more complicated index categories we must use the fibered style.
 We can go back and forth between the styles using the pre-image and total space
 constructions.
 
+## Defining syntax in a glued category
+
+TODO
 
 ## Quantitative type theory (simplified)
 
@@ -100,4 +103,5 @@ include any type formers). However, the categories of models are not the same:
 level 0 and level 1, while QTT requires that these are the same. 
 
 ## First-class extraction with layered type theory
+
 
