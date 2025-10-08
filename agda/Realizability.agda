@@ -3,7 +3,8 @@ module Realizability where
 
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Vec using (Vec; []; _∷_; lookup; map)
+open import Data.Vec using (Vec; []; _∷_; lookup; map; tabulate)
+open import Data.Vec.Properties using (lookup∘tabulate)
 open import Data.Maybe using (Maybe; just; nothing; _>>=_)
 open import Data.Product using (∃-syntax)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂; subst)
@@ -78,6 +79,50 @@ module PCAUtils (A : PCA) where
     a' ← eval a σ
     b' ← eval b σ
     a' ∙ b'
+    
+  sub : ∣ A [ n ]∣ → ∣ A [ m ]∣^ n → ∣ A [ m ]∣
+  sub (v x) σ = lookup σ x
+  sub ⌜ x ⌝ σ = ⌜ x ⌝
+  sub (x ∙' x₁) σ = sub x σ ∙' sub x₁ σ
+  
+  identity : ∣ A [ n ]∣^ n
+  identity = tabulate v
+  
+  compose : ∀ {n m k} → ∣ A [ m ]∣^ n → ∣ A [ k ]∣^ m → ∣ A [ k ]∣^ n
+  compose σ τ = tabulate (λ i → sub (lookup σ i) τ)
+  
+  weaken : ∀ {m} → ∣ A [ suc m ]∣^ m
+  weaken = tabulate (λ i → v (suc i))
+  
+  compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
+  compose-weaken {σ = []} = refl
+  compose-weaken {σ = a ∷ σ} = cong₂ (_∷_) refl {!  compose-weaken !}
+  
+  sub-identity : ∀ {n} (x : ∣ A [ n ]∣) → sub x identity ≡ x
+  sub-identity {suc n} (v zero) = refl
+  sub-identity {suc n} (v (suc x)) = lookup∘tabulate (λ x₁ → v (suc x₁)) x
+  sub-identity (⌜ x ⌝) = refl
+  sub-identity (x ∙' y) = cong₂ _∙'_ (sub-identity x) (sub-identity y)
+  
+  sub-compose : ∀ {n m k} (σ : ∣ A [ m ]∣^ n) (τ : ∣ A [ k ]∣^ m) (x : ∣ A [ n ]∣)
+    → sub (sub x σ) τ ≡ sub x (compose σ τ)
+  sub-compose (a ∷ σ) τ (v zero) = refl
+  sub-compose (a ∷ σ) τ (v (suc x)) = sub-compose σ τ (v x)
+  sub-compose σ τ ⌜ x ⌝ = refl
+  sub-compose σ τ (x ∙' y) = cong₂ _∙'_ (sub-compose σ τ x) (sub-compose σ τ y)
+  
+  compose-assoc : ∀ {n m k l} (σ : ∣ A [ m ]∣^ n) (τ : ∣ A [ k ]∣^ m) (ρ : ∣ A [ l ]∣^ k)
+    → compose (compose σ τ) ρ ≡ compose σ (compose τ ρ)
+  compose-assoc [] τ ρ = refl
+  compose-assoc (x ∷ σ) τ ρ = cong₂ (_∷_) (sub-compose τ ρ x) (compose-assoc σ τ ρ)
+  
+  compose-id : ∀ {n m} (σ : ∣ A [ m ]∣^ n) → compose σ identity ≡ σ
+  compose-id [] = refl
+  compose-id (x ∷ σ) = cong₂ (_∷_) (sub-identity x) (compose-id σ) 
+  
+  id-compose : ∀ {n m} (σ : ∣ A [ m ]∣^ n) → compose identity σ ≡ σ
+  id-compose [] = refl
+  id-compose (x ∷ σ) = cong₂ (_∷_) refl {!   !}
   
   wk : {n : ℕ} → ∣ A [ n ]∣ → ∣ A [ suc n ]∣
   wk (v x) = v (suc x)
@@ -112,9 +157,9 @@ module PCAUtils (A : PCA) where
   Λ' ⌜ x ⌝ = ⌜ (K ∙ x) ↓by Kx-def ⌝
   Λ' (t ∙' t') = (⌜ S ⌝ ∙' Λ' t) ∙' Λ' t'
   
-  >>=-just : ∀ {X Y : Set} {a : Maybe X} {a' : X} {b : X → Maybe Y} {b' : Y}
-    → (a ≡ just a') → (b a' ≡ just b')
-    → ((a >>= b) ≡ just b')
+  >>=-just : ∀ {X Y : Set} {a : Maybe X} {a' : X} {b : X → Maybe Y} {b' : Maybe Y}
+    → (a ≡ just a') → (b a' ≡ b')
+    → ((a >>= b) ≡ b')
   >>=-just refl p = p
   
   -- Functional completeness:
@@ -133,7 +178,10 @@ module PCAUtils (A : PCA) where
   β : ∀ {x y} → eval (⌜ Λ x ⌝ ∙' ⌜ y ⌝) [] ≡ eval x (y ∷ [])
   β {v zero} {y} = trans Sxyz-id (trans (?∙?-def Kx-def Kx-def) Kxy-id)
   β {⌜ x ⌝} {y} = Kxy-id
-  β {x ∙' x₁} {y} = {!   !}
+  β {x ∙' x'} {y} = 
+    let xih = β {x} {y} in
+    let x'ih = β {x'} {y} in
+    {!    !}
 
   pair' : ∣ A [ n ]∣ → ∣ A [ n ]∣ → ∣ A [ n ]∣
   pair' x y = Λ' ((v zero ∙' wk x) ∙' wk y)

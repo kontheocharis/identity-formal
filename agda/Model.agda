@@ -142,7 +142,7 @@ record TT-Logic : Set2 where
   σ ⁺L = (σ ∘L pL) ,L subst (TmL _) (sym [∘]T) qL
   
   [pL][σ⁺]≡[σ][pL] : ∀ {ΓL ΔL AL BL} {σ : SubL ΓL ΔL} → (AL [ pL {ΔL} {BL} ]T) [ σ ⁺L ]T ≡ (AL [ σ ]T) [ pL ]T
-  [pL][σ⁺]≡[σ][pL] {AL = AL} = trans (sym [∘]T) (trans (cong (AL [_]T) pL∘,) ([∘]T))
+  [pL][σ⁺]≡[σ][pL] = trans (sym [∘]T) (trans (cong (_ [_]T) pL∘,) ([∘]T))
   
   field
     -- Terms
