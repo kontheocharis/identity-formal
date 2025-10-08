@@ -13,9 +13,16 @@ open import Model
 open import Realizability
 open import Utils
 
-module OverPCA (A : PCA) where
+record PCA+ (A : PCA) : Set1 where
+  open Realizability.Relations A
+  field
+    ZERO : ∣ A ∣
+    SUCC : ∣ A ∣
+    REC : ∣ A ∣
 
+module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   open Realizability.Relations A public
+  open PCA+ A+
 
   record Conᴿ (ΓLᴿ : Set) (ΓCᴿ : ℕ) : Set1 where
     field
@@ -91,11 +98,11 @@ module OverPCA (A : PCA) where
   RC .appC[] = refl
   RC .unit = ⌜ I ⌝
   RC .unit[] = refl
-  RC .zeroC = {!   !}
-  RC .zeroC[] = {!   !}
-  RC .succC = {!   !}
-  RC .succC[] = {!   !}
-  RC .recC = {!   !}
+  RC .zeroC = ⌜ ZERO ⌝
+  RC .zeroC[] = refl
+  RC .succC n = ⌜ SUCC ⌝ ∙' n
+  RC .succC[] = refl
+  RC .recC z s n = ((⌜ REC ⌝ ∙' z) ∙' Λ' s) ∙' n
   RC .recC[] = {!   !}
   RC .recC-η1 = {!   !}
   RC .recC-β-zero = {!   !}
@@ -132,22 +139,30 @@ module OverPCA (A : PCA) where
   RL .pL,qL = refl
   RL .pL∘, = refl
   RL .qL[,] = refl
-  RL .Π X Y = {!   !}
+  ∣ RL .Π X Y ∣ γ = (x : ∣ X ∣ γ) → ∣ Y ∣ (γ , x)
+  ∣ RL .Π X Y ∣⁺ γ f
+    = Σ[ f' ∈ (∀ {x} (x' : ∣ X ∣⁺ γ x) → ∣ Y ∣⁺ (γ , x) (f x)) ]
+      (∃Tracked (λ (x , x') → f x , f' x') ((X ᴿᴿ) γ) (λ (t , t') → (Y ᴿᴿ) (γ , t)))
+  RL .Π X Y ᴿᴿ = {!   !}
+  RL .Π X Y .total = {!   !}
   RL .Π[] = {!   !}
-  RL .lamL = {!   !}
+  RL .lamL f γ t = f (γ , t)
   RL .lamL[] = {!   !}
-  RL .apL = {!   !}
-  RL .βL = {!   !}
-  RL .ηL = {!   !}
+  RL .apL z (γ , a) = z γ a
+  RL .βL t = refl
+  RL .ηL t = refl
   RL .U = {!   !}
   RL .U[] = {!   !}
   RL .El = {!   !}
   RL .El[] = {!   !}
-  RL .Nat = {!   !}
+  ∣ RL .Nat ∣ γ = ℕ
+  ∣ RL .Nat ∣⁺ γ x = ⊤
+  (RL .Nat ᴿᴿ) γ x x₁ = {!   !}
+  RL .Nat .total = {!   !}
   RL .Nat[] = {!   !}
-  RL .zeroL = {!   !}
+  RL .zeroL γ = 0
   RL .zeroL[] = {!   !}
-  RL .succL = {!   !}
+  RL .succL n γ = suc (n γ)
   RL .succL[] = {!   !}
   RL .recL = {!   !}
   RL .recL[] = {!   !}

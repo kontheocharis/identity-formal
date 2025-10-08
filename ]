@@ -7,9 +7,7 @@ open import Data.Vec using (Vec; []; _∷_; lookup; map; tabulate; _++_)
 open import Data.Vec.Properties using (lookup∘tabulate)
 open import Data.Maybe using (Maybe; just; nothing; _>>=_)
 open import Data.Product using (∃-syntax)
-open import Relation.Binary.PropositionalEquality
-  using (_≡_; refl; cong; trans; sym; cong₂; subst)
-open Relation.Binary.PropositionalEquality.≡-Reasoning
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂; subst)
 
 open import Utils
 
@@ -96,10 +94,6 @@ module PCAUtils (A : PCA) where
   weaken : ∀ {m} → ∣ A [ suc m ]∣^ m
   weaken = tabulate (λ i → v (suc i))
   
-  weaken∘weaken-id : ∀ {k} → compose weaken (weaken {m = suc k}) ≡ (tabulate (λ i → v (suc (suc i))))
-  weaken∘weaken-id {k = zero} = refl
-  weaken∘weaken-id {k = suc k} = cong₂ (_∷_) refl {! weaken∘weaken-id  !}
-  
   sub-compose : ∀ {n m k} (σ : ∣ A [ m ]∣^ n) (τ : ∣ A [ k ]∣^ m) (x : ∣ A [ n ]∣)
     → sub (sub x σ) τ ≡ sub x (compose σ τ)
   sub-compose (a ∷ σ) τ (v zero) = refl
@@ -111,19 +105,14 @@ module PCAUtils (A : PCA) where
     → compose (compose σ τ) ρ ≡ compose σ (compose τ ρ)
   compose-assoc [] τ ρ = refl
   compose-assoc (x ∷ σ) τ ρ = cong₂ (_∷_) (sub-compose τ ρ x) (compose-assoc σ τ ρ)
+  
+  compose-assoc' : ∀ {n m k l} {σ : ∣ A [ m ]∣^ n} {τ : ∣ A [ k ]∣^ m} {ρ : ∣ A [ l ]∣^ k}
+    → compose (compose σ τ) ρ ≡ compose σ (compose τ ρ)
+  compose-assoc' {_} {_} {_} {_} {σ} {τ} {ρ} = compose-assoc σ τ ρ
 
   compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
   compose-weaken {σ = []} = refl
-  compose-weaken {k = k} {t = t} {σ = x ∷ σ} = cong₂ (_∷_) refl
-    (begin
-      compose (tabulate (λ x₂ → v (suc (suc x₂)))) (t ∷ x ∷ σ)
-      ≡⟨  cong (λ l → compose l (t ∷ x ∷ σ)) (sym weaken∘weaken-id) ⟩
-      _
-      ≡⟨  compose-assoc weaken weaken (t ∷ x ∷ σ) ⟩
-      _
-      ≡⟨  {!  cong (λ l → compose l _) ? !} ⟩
-      {!   !}
-    ∎)
+  compose-weaken {k = k} {σ = x ∷ σ} = cong₂ (_∷_) refl ?
 
     -- (trans (compose-assoc' {m = {!   !}} {σ = {!   !}} {τ = {!   !}}) (compose-weaken {t = {!   !}}))
   -- compose-weaken {suc m} {σ = x ∷ σ} = cong₂ (_∷_) refl {!   !}
