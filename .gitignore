@@ -27,3 +27,7 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
+
+# Agda files
+*.agdai
+_build/

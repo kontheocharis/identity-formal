@@ -18,6 +18,9 @@ infix 4 _≡[_]_
 _≡[_]_ : ∀ {i} {A B : Set i} (a : A) (p : A ≡ B) (b : B) → Set i
 _≡[_]_ {i} {A} {B} a p b = subst (λ s → s) p a ≡ b
 
+coe : ∀ {i} {A B : Set i} → A ≡ B → A → B
+coe p a = subst (λ s → s) p a
+
 pure : ∀ {A : Set} → A → Maybe A
 pure = just
 

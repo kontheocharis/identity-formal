@@ -4,7 +4,85 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; tran
 
 open import Utils
 
+record TT-Comp : Set2 where
+  field
+    -- Computational
+    
+    -- Sorts
+    ConC : Set
+    SubC : ConC → ConC → Set
+    TmC : ConC → Set
+    
+    -- Category
+    idC : ∀ {ΓC} → SubC ΓC ΓC
+    _∘C_ : ∀ {ΓC ΔC ΘC} → (σ : SubC ΔC ΘC) → (τ : SubC ΓC ΔC) → SubC ΓC ΘC
+    assocC : ∀ {ΓC ΔC ΘC ΞC} {ρ : SubC ΘC ΞC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
+      → (ρ ∘C (σ ∘C τ)) ≡ ((ρ ∘C σ) ∘C τ)
+    ∘idC : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (idC ∘C σ) ≡ σ
+    idC∘ : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (σ ∘C idC) ≡ σ
+    
+    -- Presheaf action
+    _[_]C : ∀ {ΓC ΔC} → TmC ΔC → (σ : SubC ΓC ΔC) → TmC ΓC
+    [id]C : ∀ {ΓC} {t : TmC ΓC} → t [ idC ]C ≡ t
+    [∘]C : ∀ {ΓC ΔC ΘC} {t : TmC ΘC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
+      → t [ σ ∘C τ ]C ≡ (t [ σ ]C) [ τ ]C
+
+    -- Terminal object
+    ∙C : ConC
+    εC : ∀ {ΓC} → SubC ΓC ∙C
+    ∃!εC : ∀ {ΓC} σ → εC {ΓC} ≡ σ
+
+    -- Context extension
+    _▷C : ConC → ConC
+    pC : ∀ {ΓC} → SubC (ΓC ▷C) ΓC
+    qC : ∀ {ΓC} → TmC (ΓC ▷C)
+    _,C_ : ∀ {ΓC ΔC} → (σ : SubC ΓC ΔC) → TmC ΓC → SubC ΓC (ΔC ▷C)
+    ,∘C : ∀ {ΓC ΔC ΘC} {σ : SubC ΓC ΔC} {σ' : SubC ΘC ΓC} {t} → (σ ,C t) ∘C σ' ≡ (σ ∘C σ') ,C (t [ σ' ]C)
+    pC,qC : ∀ {ΓC} → (pC {ΓC} ,C qC) ≡ idC
+    pC∘, : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → pC ∘C (σ ,C t) ≡ σ
+    qC[,] : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → qC [ σ ,C t ]C ≡ t
+
+  ⟨_⟩C : ∀ {ΓC} → TmC ΓC → SubC ΓC (ΓC ▷C)
+  ⟨ t ⟩C = idC ,C t
+    
+  _⁺C : ∀ {ΓC ΔC} → SubC ΓC ΔC → SubC (ΓC ▷C) (ΔC ▷C)
+  σ ⁺C = (σ ∘C pC) ,C qC
+    
+  field
+
+    -- Terms
+    
+    -- Functions
+    lamC : ∀ {ΓC} → TmC (ΓC ▷C) → TmC ΓC
+    lamC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (lamC {ΓC} t) [ σ ]C ≡ lamC (t [ σ ⁺C ]C)
+
+    appC : ∀ {ΓC} → TmC ΓC → TmC ΓC → TmC ΓC
+    appC[] : ∀ {ΓC ΔC t u} {σ : SubC ΔC ΓC} → (appC {ΓC} t u) [ σ ]C ≡ appC (t [ σ ]C) (u [ σ ]C)
+    
+    -- Unit
+    unit : ∀ {ΓC} → TmC ΓC
+    unit[] : ∀ {ΓC ΔC} {σ : SubC ΔC ΓC} → (unit {ΓC}) [ σ ]C ≡ unit
+
+    -- Natural numbers
+    zeroC : ∀ {ΓC} → TmC ΓC
+    zeroC[] : ∀ {ΓC ΔC σ} → (zeroC {ΓC}) [ σ ]C ≡ zeroC {ΔC}
+
+    succC : ∀ {ΓC} → TmC ΓC → TmC ΓC
+    succC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (succC {ΓC} t) [ σ ]C ≡ succC (t [ σ ]C)
+    
+    recC : ∀ {ΓC} → TmC ΓC → TmC (ΓC ▷C) → TmC ΓC → TmC ΓC
+    recC[] : ∀ {ΓC ΔC z s n} {σ : SubC ΔC ΓC}
+      → (recC {ΓC} z s n) [ σ ]C ≡ recC (z [ σ ]C) (s [ σ ⁺C ]C) (n [ σ ]C)
+    
+
+    recC-η1 : ∀ {ΓC n} → recC {ΓC} zeroC (succC qC) n ≡ n
+    recC-β-zero : ∀ {ΓC z s} → recC {ΓC} z s zeroC ≡ z
+    recC-β-succ : ∀ {ΓC z s n} → recC {ΓC} z s (succC n) ≡ s [ ⟨ recC z s n ⟩C ]C
+
 record TT-Logic : Set2 where
+  field
+    comp : TT-Comp
+  open TT-Comp comp public
 
   field
     -- Logical
@@ -118,91 +196,20 @@ record TT-Logic : Set2 where
     Λ[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → Λ [ σ ]T ≡ Λ
     lamΛ : ∀ {ΓL} → TmL (ΓL ▷L Λ) Λ → TmL ΓL Λ
     appΛ : ∀ {ΓL} → TmL ΓL Λ → TmL ΓL Λ → TmL ΓL Λ
-
-record TT-Comp : Set2 where
-  field
-    logic : TT-Logic
-
-  open TT-Logic logic public
-  field
-    -- Computational
     
-    -- Sorts
-    ConC : ConL → Set
-    SubC : ∀ {ΓL ΔL} → ConC ΓL → ConC ΔL → SubL ΓL ΔL → Set
-    TmC : ∀ {ΓL} → ConC ΓL → TmL ΓL Λ → Set
-    
-    -- Category
-    idC : ∀ {ΓC} → SubC ΓC ΓC idL
-    _∘C_ : ∀ {ΓC ΔC ΘC σL σL'} → (σ : SubC ΔC ΘC σL) → (τ : SubC ΓC ΔC σL') → SubC ΓC ΘC (σL ∘L σL')
-    -- assocC : ∀ {ΓC ΔC ΘC ΞC} {ρ : SubC ΘC ΞC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
-    --   → (ρ ∘C (σ ∘C τ)) ≡ ((ρ ∘C σ) ∘C τ)
-    -- ∘idC : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (idC ∘C σ) ≡ σ
-    -- idC∘ : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (σ ∘C idC) ≡ σ
-    
-    -- Presheaf action
-    _[_]C : ∀ {ΓC ΔC σL tL} → TmC ΔC tL → (σ : SubC ΓC ΔC σL) → TmC ΓC (coeL Λ[] (tL [ σL ]L))
-    -- [id]C : ∀ {ΓC} {t : TmC ΓC} → t [ idC ]C ≡ t
-    -- [∘]C : ∀ {ΓC ΔC ΘC} {t : TmC ΘC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
-    --   → t [ σ ∘C τ ]C ≡ (t [ σ ]C) [ τ ]C
-
-    -- Terminal object
-    ∙C : ConC ∙L
-    εC : ∀ {ΓC} → SubC ΓC ∙C ?
-    -- ∃!εC : ∀ {ΓC} σ → εC {ΓC} ≡ σ
-
-    -- Context extension
-    _▷C : ∀ {ΓL} → ConC ΓL → ConC (ΓL ▷L Λ)
-    pC : ∀ {ΓC} → SubC (ΓC ▷C) ΓC ?
-    qC : ∀ {ΓC} → TmC (ΓC ▷C) ?
-    _,C_ : ∀ {ΓC ΔC} → (σ : SubC ΓC ΔC ?) → TmC ΓC ? → SubC ΓC (ΔC ▷C) ?
-    -- ,∘C : ∀ {ΓC ΔC ΘC} {σ : SubC ΓC ΔC} {σ' : SubC ΘC ΓC} {t} → (σ ,C t) ∘C σ' ≡ (σ ∘C σ') ,C (t [ σ' ]C)
-    -- pC,qC : ∀ {ΓC} → (pC {ΓC} ,C qC) ≡ idC
-    -- pC∘, : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → pC ∘C (σ ,C t) ≡ σ
-    -- qC[,] : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → qC [ σ ,C t ]C ≡ t
-
-  ⟨_⟩C : ∀ {ΓC} → TmC ΓC ? → SubC ΓC (ΓC ▷C) ?
-  ⟨ t ⟩C = idC ,C t
-    
-  _⁺C : ∀ {ΓC ΔC} → SubC ΓC ΔC ? → SubC (ΓC ▷C) (ΔC ▷C) ?
-  σ ⁺C = (σ ∘C pC) ,C qC
-    
-  field
-
-    -- Terms
-    
-    -- Functions
-    lamC : ∀ {ΓC} → TmC (ΓC ▷C) ? → TmC ΓC ?
-    lamC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (lamC {ΓC} t) [ σ ]C ≡ lamC (t [ σ ⁺C ]C)
-
-    appC : ∀ {ΓC} → TmC ΓC ? → TmC ΓC ? → TmC ΓC ?
-    appC[] : ∀ {ΓC ΔC t u} {σ : SubC ΔC ΓC} → (appC {ΓC} t u) [ σ ]C ≡ appC (t [ σ ]C) (u [ σ ]C)
-    
-    -- Unit
-    unit : ∀ {ΓC} → TmC ΓC ?
-    unit[] : ∀ {ΓC ΔC} {σ : SubC ΔC ΓC ?} → (unit {ΓC}) [ σ ]C ≡ unit
-
-    -- Natural numbers
-    zeroC : ∀ {ΓC} → TmC ΓC ?
-    zeroC[] : ∀ {ΓC ΔC σ} → (zeroC {ΓC}) [ σ ]C ≡ zeroC {ΔC}
-
-    succC : ∀ {ΓC} → TmC ΓC → TmC ΓC ?
-    succC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC ?} → (succC {ΓC} t) [ σ ]C ≡ succC (t [ σ ]C)
-    
-    recC : ∀ {ΓC} → TmC ΓC ? → TmC (ΓC ▷C) ? → TmC ΓC ? → TmC ΓC ?
-    recC[] : ∀ {ΓC ΔC z s n} {σ : SubC ΔC ΓC}
-      → (recC {ΓC} z s n) [ σ ]C ≡ recC (z [ σ ]C) (s [ σ ⁺C ]C) (n [ σ ]C)
-    
-
-    recC-η1 : ∀ {ΓC n} → recC {ΓC} zeroC (succC qC) n ≡ n
-    recC-β-zero : ∀ {ΓC z s} → recC {ΓC} z s zeroC ≡ z
-    recC-β-succ : ∀ {ΓC z s n} → recC {ΓC} z s (succC n) ≡ s [ ⟨ recC z s n ⟩C ]C
+    -- Specialization types
+    Spec : ∀ {ΓL} → Ty ΓL → (c : TmL ΓL Λ) → Ty ΓL
+    specL : ∀ {ΓL TL c} → TmL ΓL TL → TmL ΓL (Spec TL c)
+    unspecL : ∀ {ΓL TL c} → TmL ΓL (Spec TL c) → TmL ΓL TL
+    specL-unspecL : ∀ {ΓL TL c} {t : TmL ΓL TL} → unspecL {c = c} (specL t) ≡ t
+    unspecL-specL : ∀ {ΓL TL c} {t : TmL ΓL (Spec TL c)} → specL (unspecL t) ≡ t
 
 
 record TT : Set2 where
   field
-    comp : TT-Comp
-  open TT-Comp comp public
+    logic : TT-Logic
+
+  open TT-Logic logic public
     
   field
     -- Total
@@ -241,21 +248,23 @@ record TT : Set2 where
       → Tm {ΓL} {ΓC} Γ P zL zC
       → Tm {ΓL ▷L P} {ΓC ▷C} (Γ ▷ P) (P [ pL ]T) sL sC
       → Tm {ΓL} {ΓC} Γ P (recL P zL sL nL) (recC zC sC nC) 
+      
+    ⟨_⟩Con : ConC → ConL
+    ⟨∙⟩Con : ⟨ ∙C ⟩Con ≡ ∙L
+    ⟨_⟩Tm : ∀ {ΓC} → TmC ΓC → TmL (⟨ ΓC ⟩Con) Λ
 
     -- Specialisations
-
-    -- Specialization types
-    Spec : ∀ {ΓL} → Ty ΓL → (c : TmL ΓL Λ) → Ty ΓL
-    specL : ∀ {ΓL TL c} → TmL ΓL TL → TmL ΓL (Spec TL c)
-    unspecL : ∀ {ΓL TL c} → TmL ΓL (Spec TL c) → TmL ΓL TL
-    specL-unspecL : ∀ {ΓL TL c} {t : TmL ΓL TL} → unspecL {c = c} (specL t) ≡ t
-    unspecL-specL : ∀ {ΓL TL c} {t : TmL ΓL (Spec TL c)} → specL (unspecL t) ≡ t
-    
     spec : ∀ {ΓL ΓC Γ T aL aC}
       → Tm {ΓL} {ΓC} Γ T aL (aC [ εC ]C)
-      → Tm Γ (Spec T {!   !}) (specL aL) (aC [ εC ]C)
+      → Tm Γ
+          (Spec T (coeL Λ[] ((coe (cong (λ x → TmL x Λ) ⟨∙⟩Con) (⟨ aC ⟩Tm)) [ εL ]L)))
+          (specL aL)
+          (aC [ εC ]C)
     unspec : ∀ {ΓL ΓC Γ T aC aL aC'}
-      → Tm {ΓL} {ΓC} Γ (Spec T {!   !}) aL aC'
+      → Tm {ΓL} {ΓC} Γ
+        (Spec T (coeL Λ[] ((coe (cong (λ x → TmL x Λ) ⟨∙⟩Con) (⟨ aC ⟩Tm)) [ εL ]L)))
+        aL
+        aC'
       → Tm Γ T (unspecL aL) (aC [ εC ]C)
 
 
