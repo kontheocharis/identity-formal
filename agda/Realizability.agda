@@ -1,8 +1,8 @@
 {-# OPTIONS --allow-unsolved-metas --inversion-max-depth=100 #-}
 module Realizability where
 
-open import Data.Nat using (ℕ; zero; suc)
-open import Data.Fin using (Fin; zero; suc; _+_)
+open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Fin using (Fin; zero; suc; _↑ʳ_)
 open import Data.Vec using (Vec; []; _∷_; lookup; map; tabulate; _++_)
 open import Data.Vec.Properties using (lookup∘tabulate)
 open import Data.Maybe using (Maybe; just; nothing; _>>=_)
@@ -96,6 +96,9 @@ module PCAUtils (A : PCA) where
   weaken : ∀ {m} → ∣ A [ suc m ]∣^ m
   weaken = tabulate (λ i → v (suc i))
   
+  weaken* : ∀ {m p} → ∣ A [ p + m ]∣^ m
+  weaken* {m} {p} = tabulate (λ i → v (p ↑ʳ i))
+  
   weaken∘weaken-id : ∀ {k} → compose weaken (weaken {m = suc k}) ≡ (tabulate (λ i → v (suc (suc i))))
   weaken∘weaken-id {k = zero} = refl
   weaken∘weaken-id {k = suc k} = cong₂ (_∷_) refl {! weaken∘weaken-id  !}
@@ -111,24 +114,6 @@ module PCAUtils (A : PCA) where
     → compose (compose σ τ) ρ ≡ compose σ (compose τ ρ)
   compose-assoc [] τ ρ = refl
   compose-assoc (x ∷ σ) τ ρ = cong₂ (_∷_) (sub-compose τ ρ x) (compose-assoc σ τ ρ)
-
-  compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
-  compose-weaken {σ = []} = refl
-  compose-weaken {k = k} {t = t} {σ = x ∷ σ} = cong₂ (_∷_) refl
-    (begin
-      compose (tabulate (λ x₂ → v (suc (suc x₂)))) (t ∷ x ∷ σ)
-      ≡⟨  cong (λ l → compose l (t ∷ x ∷ σ)) (sym weaken∘weaken-id) ⟩
-      _
-      ≡⟨  compose-assoc weaken weaken (t ∷ x ∷ σ) ⟩
-      _
-      ≡⟨  {!  cong (λ l → compose l _) ? !} ⟩
-      {!   !}
-    ∎)
-
-    -- (trans (compose-assoc' {m = {!   !}} {σ = {!   !}} {τ = {!   !}}) (compose-weaken {t = {!   !}}))
-  -- compose-weaken {suc m} {σ = x ∷ σ} = cong₂ (_∷_) refl {!   !}
-  
-    
   
   sub-identity : ∀ {n} (x : ∣ A [ n ]∣) → sub x identity ≡ x
   sub-identity {suc n} (v zero) = refl
@@ -140,9 +125,41 @@ module PCAUtils (A : PCA) where
   compose-id [] = refl
   compose-id (x ∷ σ) = cong₂ (_∷_) (sub-identity x) (compose-id σ) 
   
+  compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
+
   id-compose : ∀ {n m} (σ : ∣ A [ m ]∣^ n) → compose identity σ ≡ σ
   id-compose [] = refl
   id-compose {m = m} (_∷_ {n} x σ) = cong₂ (_∷_) refl compose-weaken
+  
+  compose-weaken* : ∀ {m k u} (σ : ∣ A [ m ]∣^ k) (τ : ∣ A [ m ]∣^ u) → compose weaken* (τ ++ σ) ≡ σ
+  compose-weaken* σ [] = id-compose σ
+  compose-weaken* σ (x ∷ τ) = begin
+    compose weaken* (x ∷ τ ++ σ)
+    ≡⟨  {!   !} ⟩
+    {!   !}
+    ≡⟨  {!   !} ⟩
+    σ
+    ∎
+
+  -- compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
+  -- compose-weaken {σ = []} = refl
+  -- compose-weaken {k = k} {t = t} {σ = x ∷ σ} = cong₂ (_∷_) refl
+  --   (begin
+  --     compose (tabulate (λ x₂ → v (suc (suc x₂)))) (t ∷ x ∷ σ)
+  --     ≡⟨  cong (λ l → compose l (t ∷ x ∷ σ)) (sym weaken∘weaken-id) ⟩
+  --      {!   !} 
+  --     ≡⟨  {!   !} ⟩
+  --     -- compose weaken (compose weaken (t ∷ x ∷ σ))
+  --     -- ≡⟨  cong (λ l → compose weaken l) compose-weaken ⟩
+  --     -- -- ≡⟨ ? ⟩
+  --     -- compose weaken (x ∷ σ)
+  --     σ
+  --   ∎)
+
+    -- (trans (compose-assoc' {m = {!   !}} {σ = {!   !}} {τ = {!   !}}) (compose-weaken {t = {!   !}}))
+  -- compose-weaken {suc m} {σ = x ∷ σ} = cong₂ (_∷_) refl {!   !}
+  
+    
   
   
   wk : {n : ℕ} → ∣ A [ n ]∣ → ∣ A [ suc n ]∣
