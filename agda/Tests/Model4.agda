@@ -1,4 +1,4 @@
-module Model2 where
+module Tests.Model4 where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂; subst)
 
@@ -191,8 +191,13 @@ record TT-Logic : Set2 where
         (coeL [pL][σ⁺]≡[σ][pL] (s [ σ ⁺L ]L))
         (coeL Nat[] (n [ σ ]L))
     
+    Λ : ∀ {ΓL} → Ty ΓL
+    Λ[] : ∀ {ΓL ΔL} {σ : SubL ΔL ΓL} → Λ [ σ ]T ≡ Λ
+    lamΛ : ∀ {ΓL} → TmL (ΓL ▷L Λ) Λ → TmL ΓL Λ
+    appΛ : ∀ {ΓL} → TmL ΓL Λ → TmL ΓL Λ → TmL ΓL Λ
+    
     -- Specialization types
-    Spec : ∀ {ΓL} → Ty ΓL → (c : TmC ∙C) → Ty ΓL
+    Spec : ∀ {ΓL} → Ty ΓL → (c : TmL ΓL Λ) → Ty ΓL
     specL : ∀ {ΓL TL c} → TmL ΓL TL → TmL ΓL (Spec TL c)
     unspecL : ∀ {ΓL TL c} → TmL ΓL (Spec TL c) → TmL ΓL TL
     specL-unspecL : ∀ {ΓL TL c} {t : TmL ΓL TL} → unspecL {c = c} (specL t) ≡ t
@@ -205,6 +210,10 @@ record TT : Set2 where
 
   open TT-Logic logic public
     
+  
+  infixl 5 _▷_
+  infixl 5 _▷0_
+
   field
     -- Total
     
@@ -214,6 +223,7 @@ record TT : Set2 where
     -- anything.
     Con : ConL → ConC → Set1
     Tm : ∀ {ΓL ΓC} → Con ΓL ΓC → (TL : Ty ΓL) → TmL ΓL TL → TmC ΓC → Set
+    TmCC : ∀ {ΓL ΓC} → Con ΓL ΓC → TmL ΓL Λ → TmC ΓC → Set
     
     -- Context
     ∙ : Con ∙L ∙C
@@ -221,6 +231,19 @@ record TT : Set2 where
     _▷0_ : ∀ {ΓL ΓC} → Con ΓL ΓC → (TL : Ty ΓL) → Con (ΓL ▷L TL) ΓC
     
     -- Terms
+
+    -- Variables
+    from-spec : ∀ {ΓL ΓC TL tCC tL tC Γ}
+      → Tm {ΓL} {ΓC} Γ (Spec TL tCC) tL tC → TmCC Γ tCC tC
+    lamCC : ∀ {ΓL ΓC tCC tC Γ}
+      → TmCC {ΓL ▷L Λ} {ΓC ▷C} (Γ ▷ Λ) tCC tC
+      → TmCC Γ (lamΛ tCC) (lamC tC)
+    appCC : ∀ {ΓL ΓC fCC fC tCC tC Γ}
+      → TmCC {ΓL} {ΓC} Γ fCC fC
+      → TmCC Γ tCC tC
+      → TmCC Γ (appΛ fCC tCC) (appC fC tC)
+    -- _[p] : ∀ {ΓL ΓC AL Γ aL aC}
+    --   → Tm Γ AL aL aC → Tm {ΓL ▷L AL} {ΓC ▷C} (Γ ▷ AL) (AL [ pL ]T) (aL [ pL ]L) (aC [ pC ]C)
     
     -- Variables
     q : ∀ {ΓL ΓC AL Γ} → Tm {ΓL ▷L AL} {ΓC ▷C} (Γ ▷ AL) (AL [ pL ]T) qL qC
@@ -244,7 +267,23 @@ record TT : Set2 where
       → Tm {ΓL} {ΓC} Γ P (recL P zL sL nL) (recC zC sC nC) 
 
     -- Specialisations
-    spec : ∀ {ΓL ΓC Γ T aL aC} → Tm {ΓL} {ΓC} Γ T aL (aC [ εC ]C) → Tm Γ (Spec T aC) (specL aL) (aC [ εC ]C)
-    unspec : ∀ {ΓL ΓC Γ T aC aL aC'} → Tm {ΓL} {ΓC} Γ (Spec T aC) aL aC' → Tm Γ T (unspecL aL) (aC [ εC ]C)
+    spec : ∀ {ΓL ΓC Γ T aC aCC aL}
+      → (k : TmCC Γ aCC aC)
+      → Tm {ΓL} {ΓC} Γ T aL aC
+      → Tm Γ (Spec T aCC) (specL aL) aC
+    unspec : ∀ {ΓL ΓC Γ T aC aCC aL aC'}
+      → (k : TmCC Γ aCC aC)
+      → Tm {ΓL} {ΓC} Γ (Spec T aCC) aL aC'
+      → Tm Γ T (unspecL aL) aC
 
 
+module Experiments (m : TT) where
+  open TT m 
+  
+  suc : Tm
+    (∙
+    ▷0 Λ
+    ▷ Spec Nat (coeL Λ[] qL)
+    )
+    (Spec Nat (coeL Λ[] (coeL Λ[] qL [ pL ]L))) {!   !} {!   !}
+  suc = spec {!   !} (unspec {!   !} {!  q !})
