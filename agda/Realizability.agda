@@ -126,6 +126,7 @@ module PCAUtils (A : PCA) where
   compose-id (x ∷ σ) = cong₂ (_∷_) (sub-identity x) (compose-id σ) 
   
   compose-weaken : ∀ {m k t} {σ} → compose {_} {_} {k} (weaken {m}) (t ∷ σ) ≡ σ
+  compose-weaken = {!   !}
 
   id-compose : ∀ {n m} (σ : ∣ A [ m ]∣^ n) → compose identity σ ≡ σ
   id-compose [] = refl
