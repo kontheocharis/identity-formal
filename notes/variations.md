@@ -82,7 +82,7 @@ out of it. For more complicated index categories we must use the fibered style.
 We can go back and forth between the styles using the pre-image and total space
 constructions.
 
-## Defining syntax in a glued category
+## Defining syntax in a LCCC
 
 TODO
 
