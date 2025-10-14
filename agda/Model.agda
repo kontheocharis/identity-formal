@@ -238,9 +238,9 @@ record TT : Set2 where
     zero : ∀ {ΓL ΓC Γ} → Tm {ΓL} {ΓC} Γ Nat zeroL zeroC
     succ : ∀ {ΓL ΓC Γ nL nC} → Tm {ΓL} {ΓC} Γ Nat nL nC → Tm {ΓL} {ΓC} Γ Nat (succL nL) (succC nC)
     rec : ∀ {ΓL ΓC P zL zC sL sC nL nC Γ}
-      → Tm {ΓL} {ΓC} Γ Nat nL nC
       → Tm {ΓL} {ΓC} Γ P zL zC
       → Tm {ΓL ▷L P} {ΓC ▷C} (Γ ▷ P) (P [ pL ]T) sL sC
+      → Tm {ΓL} {ΓC} Γ Nat nL nC
       → Tm {ΓL} {ΓC} Γ P (recL P zL sL nL) (recC zC sC nC) 
 
     -- Specialisations

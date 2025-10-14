@@ -1,6 +1,7 @@
 module Models.Realizability where
 
 open import Data.Nat using (ℕ; suc)
+open import Data.Nat.Induction renaming (rec to recursion)
 open import Data.Fin using (Fin; suc) renaming (zero to f0)
 open import Data.Product using (_×_; Σ-syntax; ∃-syntax; _,_; proj₁; proj₂)
 open import Data.Vec using (Vec; [_]; []; _∷_; lookup; map; tabulate)
@@ -107,6 +108,10 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   RC .recC-η1 = {!   !}
   RC .recC-β-zero = {!   !}
   RC .recC-β-succ = {!   !}
+  
+  nat-rec : (P : ℕ → Set) → P 0 → ((n : ℕ) → P n → P (suc n)) → (n : ℕ) → P n
+  nat-rec P z s ℕ.zero = z
+  nat-rec P z s (suc n) = s n (nat-rec P z s n)
 
   RL : TT-Logic
   RL .comp = RC
@@ -164,7 +169,7 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   RL .zeroL[] = {!   !}
   RL .succL n γ = suc (n γ)
   RL .succL[] = {!   !}
-  RL .recL = {!   !}
+  RL .recL P z s n γ = nat-rec (λ _ → ∣ P ∣ γ) (z γ) (λ _ k → s (γ , k)) (n γ)
   RL .recL[] = {!   !}
   RL .Spec = {!   !}
   RL .specL = {!   !}
@@ -196,7 +201,13 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   R .app = {!   !}
   R .zero = {!   !}
   R .succ = {!   !}
-  R .rec = {!   !}
+  ∣ R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ∣ γ γ'
+    = nat-rec (λ k → ∣ P ∣⁺ γ (nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) k))
+      (∣ z ∣ γ γ')
+      (λ n₁ z₁ → ∣ s ∣ (γ , nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) n₁) (γ' , z₁))
+      (nL γ)
+  (R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ᵀᴿ) (γ , γ') γTR γRR
+    = {!   !} , {!   !}
   R .spec = {!   !}
   R .unspec = {!   !}
 
