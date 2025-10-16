@@ -4,7 +4,7 @@ open import Data.Nat using (ℕ; suc)
 open import Data.Nat.Induction renaming (rec to recursion)
 open import Data.Fin using (Fin; suc) renaming (zero to f0)
 open import Data.Product using (_×_; Σ-syntax; ∃-syntax; _,_; proj₁; proj₂)
-open import Data.Vec using (Vec; [_]; []; _∷_; lookup; map; tabulate)
+open import Data.Vec using (Vec; [_]; []; _∷_; lookup; map; tabulate; head)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; subst; sym)
 open import Data.Maybe using (Maybe; just; nothing; _>>=_)
@@ -24,6 +24,25 @@ record PCA+ (A : PCA) : Set1 where
 module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   open Realizability.Relations A public
   open PCA+ A+
+  
+  -- record SubCᴿ (ΓCᴿ : ℕ) (ΔCᴿ : ℕ) : Set1 where
+  --   field
+  --     ∣_∣ : ∣ A ∣^ ΓCᴿ → Set
+  --     real : (a : ∣ A ∣^ ΓCᴿ) → ∣_∣ a → ∣ A ∣^ 1
+  
+  record TmCᴿ (ΓCᴿ : ℕ) : Set1 where
+    field
+      ∣_∣ : Set
+      real : (a : ∣ A ∣^ ΓCᴿ) → ∣_∣ → ∣ A ∣^ 1
+
+  open TmCᴿ public
+
+  record TmCᴿ≡ {ΓCᴿ : ℕ} (a : TmCᴿ ΓCᴿ) (b : TmCᴿ ΓCᴿ) : Set1 where
+    field
+      ∣_∣≡ : a .∣_∣ ≡ b .∣_∣
+      real≡ : ∀ x pa → a .real x pa ≡ b .real x (subst (λ s → s) ∣_∣≡ pa)
+      
+  TmCᴿ-cong : ∀ {ΓCᴿ} {a b : TmCᴿ ΓCᴿ} → TmCᴿ≡ a b → a ≡ b
 
   record Conᴿ (ΓLᴿ : Set) (ΓCᴿ : ℕ) : Set1 where
     field
@@ -34,16 +53,15 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
       
   open Conᴿ
 
-  record Subᴿ {ΓLᴿ ΓCᴿ ΔLᴿ ΔCᴿ}
-    (Γᴿ : Conᴿ ΓLᴿ ΓCᴿ)
-    (Δᴿ : Conᴿ ΔLᴿ ΔCᴿ)
-    (σLᴿ : ΓLᴿ → ΔLᴿ)
-    (σCᴿ : ∣ A [ ΓCᴿ ]∣^ ΔCᴿ) : Set where
-    field
-      ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) σCᴿ (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
+  -- record Subᴿ {ΓLᴿ ΓCᴿ ΔLᴿ ΔCᴿ}
+  --   (Γᴿ : Conᴿ ΓLᴿ ΓCᴿ)
+  --   (Δᴿ : Conᴿ ΔLᴿ ΔCᴿ)
+  --   (σLᴿ : ΓLᴿ → ΔLᴿ) : Set where
+  --   field
+  --     ∣_∣ : ∀ γ → ∣ Γᴿ ∣ γ → ∣ Δᴿ ∣ (σLᴿ γ)
+  --     _ᵀᴿ : Tracked (λ (γ , γ') → (σLᴿ γ , ∣_∣ γ γ')) σCᴿ (Γᴿ ᴿᴿ) (λ _ → Δᴿ ᴿᴿ)
 
-  open Subᴿ public
+  -- open Subᴿ public
 
   record Tyᴿ (ΓLᴿ : Set) : Set1 where
     field
@@ -58,10 +76,10 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
     (Γᴿ : Conᴿ ΓLᴿ ΓCᴿ)
     (Tᴿ : Tyᴿ ΓLᴿ)
     (aLᴿ : (γ : ΓLᴿ) → ∣ Tᴿ ∣ γ)
-    (aCᴿ : ∣ A [ ΓCᴿ ]∣) : Set where
+    (aCᴿ : TmCᴿ ΓCᴿ) : Set where
     field
       ∣_∣ : ∀ γ (γ' : ∣ Γᴿ ∣ γ) → ∣ Tᴿ ∣⁺ γ (aLᴿ γ)
-      _ᵀᴿ : Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) [ aCᴿ ] (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
+      _ᵀᴿ : ∃Tracked (λ (γ , γ') → (aLᴿ γ , ∣_∣ γ γ')) (Γᴿ ᴿᴿ) (λ (γ , γ') → (Tᴿ ᴿᴿ) γ)
 
 
   open Tmᴿ public
@@ -70,42 +88,37 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   open TT-Comp
   open TT
   
+  is-num : ∣ A ∣^ 1 → Set
+  
+  recursor : ∣ A ∣^ 1 → (∣ A ∣^ 1 → ∣ A ∣^ 1) → ∣ A ∣^ 1 → ∣ A ∣^ 1
+  numzero : ∣ A ∣^ 1
+  numsucc : ∣ A ∣^ 1 → ∣ A ∣^ 1
+  
   RC : TT-Comp
   RC .ConC = ℕ
-  RC .SubC ΓC ΔC = ∣ A [ ΓC ]∣^ ΔC
-  RC .TmC ΓC = ∣ A [ ΓC ]∣
-  RC .idC = identity
-  (RC ∘C σ) τ = compose σ τ
-  RC .assocC {ρ = ρ} {σ} {τ} = sym (compose-assoc ρ σ τ)
-  RC .∘idC {σ = σ} = id-compose σ
-  RC .idC∘ {σ = σ} = compose-id σ
-  (RC [ a ]C) σ = sub a σ
-  RC .[id]C {ΓC} {t} = sub-identity t
-  RC .[∘]C {ΓC} {ΔC} {ΘC} {t} {σ} {τ} = sym (sub-compose σ τ t)
+  RC .TmC ΓC = TmCᴿ ΓC
   RC .∙C = 0
-  RC .εC = []
-  RC .∃!εC [] = refl
   (RC ▷C) Γ = suc Γ
-  RC .pC = weaken
-  RC .qC = v f0
-  (RC ,C σ) a = a ∷ σ
-  RC .,∘C = refl
-  RC .pC,qC = refl
-  RC .pC∘, = compose-weaken
-  RC .qC[,] = refl
-  RC .lamC x = Λ' x
-  RC .lamC[] = {!   !}
-  RC .appC x y = x ∙' y
-  RC .appC[] = refl
-  RC .unit = ⌜ I ⌝
-  RC .unit[] = refl
-  RC .zeroC = ⌜ ZERO ⌝
-  RC .zeroC[] = refl
-  RC .succC n = ⌜ SUCC ⌝ ∙' n
-  RC .succC[] = refl
-  RC .recC z s n = ((⌜ REC ⌝ ∙' z) ∙' Λ' s) ∙' n
-  RC .recC[] = {!   !}
-  RC .recC-η1 = {!   !}
+  ∣ RC .qC ∣ = ⊤
+  RC .qC .real (x₁ ∷ a) x = [ x₁ ] -- v f0
+  ∣ RC .wkC x ∣ = ∣ x ∣
+  RC .wkC x .real (x₂ ∷ a) x₁ = x .real a x₁
+  ∣ RC .openC x ∣ = ∣ x ∣
+  RC .openC x .real a x₁ = x .real [] x₁
+  ∣ (RC [ x ]C) x₁ ∣ = ∣ x ∣ × ∣ x₁ ∣
+  (RC [ x ]C) x₁ .real a (xp , x₁p) = x .real (head (x₁ .real a x₁p) ∷ a) xp
+  ∣ RC .lamC x ∣ = {!   !}
+  RC .lamC x .real = {!   !} -- Λ' x
+  RC .appC x y = {!   !} -- x ∙' y
+  RC .unit = {!   !} -- ⌜ I ⌝
+  ∣ RC .zeroC ∣ = ⊤
+  RC .zeroC .real a x = numzero -- ⌜ ZERO ⌝
+  ∣ RC .succC n ∣ = ∣ n ∣
+  RC .succC n .real = {!   !} -- ⌜ SUCC ⌝ ∙' n
+  ∣ RC .recC z s n ∣ = ∣ z ∣ × ∣ s ∣ × ∣ n ∣ × (∀ γ p → is-num (n .real γ p))
+  RC .recC z s n .real a (zp , sp , np , _)
+    = recursor (z .real a zp) (λ s' → s .real (head s' ∷ a) sp) (n .real a np) -- ((⌜ REC ⌝ ∙' z) ∙' Λ' s) ∙' n
+  RC .recC-η1 = TmCᴿ-cong (record { ∣_∣≡ = {!   !} ; real≡ = {!   !}  }) -- {!   !}
   RC .recC-β-zero = {!   !}
   RC .recC-β-succ = {!   !}
   
@@ -178,38 +191,38 @@ module OverPCA+ (A : PCA) (A+ : PCA+ A) where
   RL .unspecL-specL = {!   !}
 
   R : TT
-  R .logic = RL
-  R .Con ΓL ΓC = Conᴿ ΓL ΓC
-  R .Tm Γ A aL aC = Tmᴿ Γ A aL aC
-  ∣ R .∙ ∣ tt = ⊤
-  (R .∙ ᴿᴿ) [] (tt , tt) = ⊤
-  R .∙ .total x = [] , tt
-  ∣ (R ▷ Γ) T ∣ (γ , a) = Σ[ γ' ∈ ∣ Γ ∣ γ ] ∣ T ∣⁺ γ a
-  ((R ▷ Γ) T ᴿᴿ) (tR ∷ γR) ((γ , t) , γ' , t')
-    = (γR ⊩[ Γ ᴿᴿ ] (γ , γ')) × ([ tR ] ⊩[ (T ᴿᴿ) γ ] (t , t'))
-  (R ▷ Γ) T .total ((γ , t) , (γ' , t')) with (Γ .total (γ , γ')) | (T .total γ (t , t'))
-  ... | γTR , γTotal | (tTR ∷ []) , tTotal
-      = tTR ∷ γTR , γTotal , tTotal
-  ∣ (R ▷0 Γ) T ∣ (γ , t) = ∣ Γ ∣ γ
-  ((R ▷0 Γ) T ᴿᴿ) a ((γ , t) , γ') = (Γ ᴿᴿ) a (γ , γ')
-  (R ▷0 Γ) T .total ((γ , t) , γ') = Γ .total (γ , γ')
-  ∣ R .q ∣ (γ , a) (γ' , a') = a'
-  (R .q ᵀᴿ) ((γ , a) , γ' , a') (aTR ∷ γTR) (γRR , aRR) = def aTR ∷ [] , aRR
-  ∣ (R [p]) t ∣ (γ , a) (γ' , a') = ∣ t ∣ γ γ'
-  ((R [p]) t ᵀᴿ) ((γ , a) , γ' , a') (aTR ∷ γTR) (γRR , aRR) = {!   !} , {!   !} 
-  R .lam = {!   !}
-  R .app = {!   !}
-  R .zero = {!   !}
-  R .succ = {!   !}
-  ∣ R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ∣ γ γ'
-    = nat-rec (λ k → ∣ P ∣⁺ γ (nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) k))
-      (∣ z ∣ γ γ')
-      (λ n₁ z₁ → ∣ s ∣ (γ , nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) n₁) (γ' , z₁))
-      (nL γ)
-  (R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ᵀᴿ) (γ , γ') γTR γRR
-    = {!   !} , {!   !}
-  R .spec = {!   !}
-  R .unspec = {!   !}
+  -- R .logic = RL
+  -- R .Con ΓL ΓC = Conᴿ ΓL ΓC
+  -- R .Tm Γ A aL aC = Tmᴿ Γ A aL aC
+  -- ∣ R .∙ ∣ tt = ⊤
+  -- (R .∙ ᴿᴿ) [] (tt , tt) = ⊤
+  -- R .∙ .total x = [] , tt
+  -- ∣ (R ▷ Γ) T ∣ (γ , a) = Σ[ γ' ∈ ∣ Γ ∣ γ ] ∣ T ∣⁺ γ a
+  -- ((R ▷ Γ) T ᴿᴿ) (tR ∷ γR) ((γ , t) , γ' , t')
+  --   = (γR ⊩[ Γ ᴿᴿ ] (γ , γ')) × ([ tR ] ⊩[ (T ᴿᴿ) γ ] (t , t'))
+  -- (R ▷ Γ) T .total ((γ , t) , (γ' , t')) with (Γ .total (γ , γ')) | (T .total γ (t , t'))
+  -- ... | γTR , γTotal | (tTR ∷ []) , tTotal
+  --     = tTR ∷ γTR , γTotal , tTotal
+  -- ∣ (R ▷0 Γ) T ∣ (γ , t) = ∣ Γ ∣ γ
+  -- ((R ▷0 Γ) T ᴿᴿ) a ((γ , t) , γ') = (Γ ᴿᴿ) a (γ , γ')
+  -- (R ▷0 Γ) T .total ((γ , t) , γ') = Γ .total (γ , γ')
+  -- ∣ R .q ∣ (γ , a) (γ' , a') = a'
+  -- (R .q ᵀᴿ) ((γ , a) , γ' , a') (aTR ∷ γTR) (γRR , aRR) = def aTR ∷ [] , aRR
+  -- ∣ (R [p]) t ∣ (γ , a) (γ' , a') = ∣ t ∣ γ γ'
+  -- ((R [p]) t ᵀᴿ) ((γ , a) , γ' , a') (aTR ∷ γTR) (γRR , aRR) = {!   !} , {!   !} 
+  -- R .lam = {!   !}
+  -- R .app = {!   !}
+  -- R .zero = {!   !}
+  -- R .succ = {!   !}
+  -- ∣ R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ∣ γ γ'
+  --   = nat-rec (λ k → ∣ P ∣⁺ γ (nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) k))
+  --     (∣ z ∣ γ γ')
+  --     (λ n₁ z₁ → ∣ s ∣ (γ , nat-rec (λ _ → ∣ P ∣ γ) (zL γ) (λ _ i → sL (γ , i)) n₁) (γ' , z₁))
+  --     (nL γ)
+  -- (R .rec {P = P} {zL = zL} {sL = sL} {nL = nL} z s n ᵀᴿ) (γ , γ') γTR γRR
+  --   = {!   !} , {!   !}
+  -- R .spec = {!   !}
+  -- R .unspec = {!   !}
 
 
 --   R .TT.ConL = Set

@@ -1,4 +1,4 @@
-{-# OPTIONS --allow-unsolved-metas --inversion-max-depth=100 #-}
+{-# OPTIONS --allow-unsolved-metas --cubical-compatible #-}
 module Realizability where
 
 open import Data.Nat using (ℕ; zero; suc; _+_)

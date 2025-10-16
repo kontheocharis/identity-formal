@@ -1,3 +1,4 @@
+{-# OPTIONS --cubical-compatible #-}
 module Utils where
 
 open import Data.Maybe using (Maybe; just; nothing)

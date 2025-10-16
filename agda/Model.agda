@@ -10,43 +10,45 @@ record TT-Comp : Set2 where
     
     -- Sorts
     ConC : Set
-    SubC : ConC → ConC → Set
-    TmC : ConC → Set
+    -- SubC : ConC → ConC → Set1
+    TmC : ConC → Set1
     
-    -- Category
-    idC : ∀ {ΓC} → SubC ΓC ΓC
-    _∘C_ : ∀ {ΓC ΔC ΘC} → (σ : SubC ΔC ΘC) → (τ : SubC ΓC ΔC) → SubC ΓC ΘC
-    assocC : ∀ {ΓC ΔC ΘC ΞC} {ρ : SubC ΘC ΞC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
-      → (ρ ∘C (σ ∘C τ)) ≡ ((ρ ∘C σ) ∘C τ)
-    ∘idC : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (idC ∘C σ) ≡ σ
-    idC∘ : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (σ ∘C idC) ≡ σ
-    
-    -- Presheaf action
-    _[_]C : ∀ {ΓC ΔC} → TmC ΔC → (σ : SubC ΓC ΔC) → TmC ΓC
-    [id]C : ∀ {ΓC} {t : TmC ΓC} → t [ idC ]C ≡ t
-    [∘]C : ∀ {ΓC ΔC ΘC} {t : TmC ΘC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
-      → t [ σ ∘C τ ]C ≡ (t [ σ ]C) [ τ ]C
+    -- -- Category
+    -- idC : ∀ {ΓC} → SubC ΓC ΓC
+    -- _∘C_ : ∀ {ΓC ΔC ΘC} → (σ : SubC ΔC ΘC) → (τ : SubC ΓC ΔC) → SubC ΓC ΘC
+    -- assocC : ∀ {ΓC ΔC ΘC ΞC} {ρ : SubC ΘC ΞC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
+    --   → (ρ ∘C (σ ∘C τ)) ≡ ((ρ ∘C σ) ∘C τ)
+    -- ∘idC : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (idC ∘C σ) ≡ σ
+    -- idC∘ : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} → (σ ∘C idC) ≡ σ
 
     -- Terminal object
     ∙C : ConC
-    εC : ∀ {ΓC} → SubC ΓC ∙C
-    ∃!εC : ∀ {ΓC} σ → εC {ΓC} ≡ σ
+    -- εC : ∀ {ΓC} → SubC ΓC ∙C
+    -- ∃!εC : ∀ {ΓC} σ → εC {ΓC} ≡ σ
 
     -- Context extension
     _▷C : ConC → ConC
-    pC : ∀ {ΓC} → SubC (ΓC ▷C) ΓC
+    -- pC : ∀ {ΓC} → SubC (ΓC ▷C) ΓC
     qC : ∀ {ΓC} → TmC (ΓC ▷C)
-    _,C_ : ∀ {ΓC ΔC} → (σ : SubC ΓC ΔC) → TmC ΓC → SubC ΓC (ΔC ▷C)
-    ,∘C : ∀ {ΓC ΔC ΘC} {σ : SubC ΓC ΔC} {σ' : SubC ΘC ΓC} {t} → (σ ,C t) ∘C σ' ≡ (σ ∘C σ') ,C (t [ σ' ]C)
-    pC,qC : ∀ {ΓC} → (pC {ΓC} ,C qC) ≡ idC
-    pC∘, : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → pC ∘C (σ ,C t) ≡ σ
-    qC[,] : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → qC [ σ ,C t ]C ≡ t
-
-  ⟨_⟩C : ∀ {ΓC} → TmC ΓC → SubC ΓC (ΓC ▷C)
-  ⟨ t ⟩C = idC ,C t
+    wkC : ∀ {ΓC} → TmC ΓC → TmC (ΓC ▷C)
+    openC : ∀ {ΓC} → TmC ∙C → TmC ΓC
+    -- _,C_ : ∀ {ΓC ΔC} → (σ : SubC ΓC ΔC) → TmC ΓC → SubC ΓC (ΔC ▷C)
+    -- ,∘C : ∀ {ΓC ΔC ΘC} {σ : SubC ΓC ΔC} {σ' : SubC ΘC ΓC} {t} → (σ ,C t) ∘C σ' ≡ (σ ∘C σ') ,C (t [ σ' ]C)
+    -- pC,qC : ∀ {ΓC} → (pC {ΓC} ,C qC) ≡ idC
+    -- pC∘, : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → pC ∘C (σ ,C t) ≡ σ
+    -- qC[,] : ∀ {ΓC ΔC} {σ : SubC ΓC ΔC} {t : TmC ΓC} → qC [ σ ,C t ]C ≡ t
     
-  _⁺C : ∀ {ΓC ΔC} → SubC ΓC ΔC → SubC (ΓC ▷C) (ΔC ▷C)
-  σ ⁺C = (σ ∘C pC) ,C qC
+    -- -- Presheaf action
+    _[_]C : ∀ {ΓC} → TmC (ΓC ▷C) → TmC ΓC → TmC ΓC
+    -- [id]C : ∀ {ΓC} {t : TmC ΓC} → t [ idC ]C ≡ t
+    -- [∘]C : ∀ {ΓC ΔC ΘC} {t : TmC ΘC} {σ : SubC ΔC ΘC} {τ : SubC ΓC ΔC}
+    --   → t [ σ ∘C τ ]C ≡ (t [ σ ]C) [ τ ]C
+
+  -- ⟨_⟩C : ∀ {ΓC} → TmC ΓC → SubC ΓC (ΓC ▷C)
+  -- ⟨ t ⟩C = idC ,C t
+    
+  -- _⁺C : ∀ {ΓC ΔC} → SubC ΓC ΔC → SubC (ΓC ▷C) (ΔC ▷C)
+  -- σ ⁺C = (σ ∘C pC) ,C qC
     
   field
 
@@ -54,30 +56,30 @@ record TT-Comp : Set2 where
     
     -- Functions
     lamC : ∀ {ΓC} → TmC (ΓC ▷C) → TmC ΓC
-    lamC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (lamC {ΓC} t) [ σ ]C ≡ lamC (t [ σ ⁺C ]C)
+    -- lamC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (lamC {ΓC} t) [ σ ]C ≡ lamC (t [ σ ⁺C ]C)
 
     appC : ∀ {ΓC} → TmC ΓC → TmC ΓC → TmC ΓC
-    appC[] : ∀ {ΓC ΔC t u} {σ : SubC ΔC ΓC} → (appC {ΓC} t u) [ σ ]C ≡ appC (t [ σ ]C) (u [ σ ]C)
+    -- appC[] : ∀ {ΓC ΔC t u} {σ : SubC ΔC ΓC} → (appC {ΓC} t u) [ σ ]C ≡ appC (t [ σ ]C) (u [ σ ]C)
     
     -- Unit
     unit : ∀ {ΓC} → TmC ΓC
-    unit[] : ∀ {ΓC ΔC} {σ : SubC ΔC ΓC} → (unit {ΓC}) [ σ ]C ≡ unit
+    -- unit[] : ∀ {ΓC ΔC} {σ : SubC ΔC ΓC} → (unit {ΓC}) [ σ ]C ≡ unit
 
     -- Natural numbers
     zeroC : ∀ {ΓC} → TmC ΓC
-    zeroC[] : ∀ {ΓC ΔC σ} → (zeroC {ΓC}) [ σ ]C ≡ zeroC {ΔC}
+    -- zeroC[] : ∀ {ΓC ΔC σ} → (zeroC {ΓC}) [ σ ]C ≡ zeroC {ΔC}
 
     succC : ∀ {ΓC} → TmC ΓC → TmC ΓC
-    succC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (succC {ΓC} t) [ σ ]C ≡ succC (t [ σ ]C)
+    -- succC[] : ∀ {ΓC ΔC t} {σ : SubC ΔC ΓC} → (succC {ΓC} t) [ σ ]C ≡ succC (t [ σ ]C)
     
     recC : ∀ {ΓC} → TmC ΓC → TmC (ΓC ▷C) → TmC ΓC → TmC ΓC
-    recC[] : ∀ {ΓC ΔC z s n} {σ : SubC ΔC ΓC}
-      → (recC {ΓC} z s n) [ σ ]C ≡ recC (z [ σ ]C) (s [ σ ⁺C ]C) (n [ σ ]C)
+    -- recC[] : ∀ {ΓC ΔC z s n} {σ : SubC ΔC ΓC}
+    --   → (recC {ΓC} z s n) [ σ ]C ≡ recC (z [ σ ]C) (s [ σ ⁺C ]C) (n [ σ ]C)
     
 
     recC-η1 : ∀ {ΓC n} → recC {ΓC} zeroC (succC qC) n ≡ n
     recC-β-zero : ∀ {ΓC z s} → recC {ΓC} z s zeroC ≡ z
-    recC-β-succ : ∀ {ΓC z s n} → recC {ΓC} z s (succC n) ≡ s [ ⟨ recC z s n ⟩C ]C
+    recC-β-succ : ∀ {ΓC z s n} → recC {ΓC} z s (succC n) ≡ s [ recC z s n ]C
 
 record TT-Logic : Set2 where
   field
@@ -225,7 +227,7 @@ record TT : Set2 where
     -- Variables
     q : ∀ {ΓL ΓC AL Γ} → Tm {ΓL ▷L AL} {ΓC ▷C} (Γ ▷ AL) (AL [ pL ]T) qL qC
     _[p] : ∀ {ΓL ΓC AL Γ aL aC}
-      → Tm Γ AL aL aC → Tm {ΓL ▷L AL} {ΓC ▷C} (Γ ▷ AL) (AL [ pL ]T) (aL [ pL ]L) (aC [ pC ]C)
+      → Tm Γ AL aL aC → Tm {ΓL ▷L AL} {ΓC ▷C} (Γ ▷ AL) (AL [ pL ]T) (aL [ pL ]L) (wkC aC)
 
     -- Functions
     lam : ∀ {ΓL ΓC TL UL tL tC Γ}
@@ -244,7 +246,7 @@ record TT : Set2 where
       → Tm {ΓL} {ΓC} Γ P (recL P zL sL nL) (recC zC sC nC) 
 
     -- Specialisations
-    spec : ∀ {ΓL ΓC Γ T aL aC} → Tm {ΓL} {ΓC} Γ T aL (aC [ εC ]C) → Tm Γ (Spec T aC) (specL aL) (aC [ εC ]C)
-    unspec : ∀ {ΓL ΓC Γ T aC aL aC'} → Tm {ΓL} {ΓC} Γ (Spec T aC) aL aC' → Tm Γ T (unspecL aL) (aC [ εC ]C)
+    spec : ∀ {ΓL ΓC Γ T aL aC} → Tm {ΓL} {ΓC} Γ T aL (openC aC) → Tm Γ (Spec T aC) (specL aL) (openC aC)
+    unspec : ∀ {ΓL ΓC Γ T aC aL aC'} → Tm {ΓL} {ΓC} Γ (Spec T aC) aL aC' → Tm Γ T (unspecL aL) (openC aC)
 
 
