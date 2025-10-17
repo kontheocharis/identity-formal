@@ -171,12 +171,15 @@ by-fin : ∀ i. Tm Γ (Fin i) aL aC → Num Γ aC
 
 _~>_ : (Γ : Con ΓL ΓC) → TmC ΓC → TmC ΓC → U
 rec-η : Num Γ s → rec s ze su ~> s
+-- + rfl,sym,trs
 
-transp : Tm Γ A aL aC → aC ~> aC' → Tm Γ A aL aC'
+-- Two options here
+transp : aC ~> aC' → Tm Γ A aL aC → Tm Γ A aL aC'
+transp-id : aC ~> aC' → Tm Γ A aL aC = Tm Γ A aL aC'
 ```
 
 ```
-TmCᴿ ΓC = |A|^ΓC
+TmCᴿ ΓC = |A[ΓC]|
 
 record (A : Tyᴿ ΓL) : Set where
   |A| : |ΓL| → Set
@@ -197,4 +200,42 @@ record (p : Γ . aC ~> aC') : Set where
   eq p : ∀ γ γ' . ∀ g ⊩[Γ] (γ , γ') . (aC ⋅ g = aC' ⋅ g)
 ```
 
-This seems to work... But its quite annoying
+This seems to work... But its quite annoying because it is not trivial to decide it..
+
+Examples:
+
+```
+last : (n : Nat) → Fin (succ n)
+last zero = fzero
+last (succ x) = fsucc (last x)
+```
+
+we have
+
+```
+last n = elim (λ n. Fin (succ n)) fzero (λ n ih. fsucc ih) n
+```
+
+so
+
+```
+|last| = |λ n. elim (λ n. Fin (succ n)) fzero (λ n ih. fsucc ih) n|
+         = λ n. rec |fzero| |λ n ih. fsucc ih| |n|
+         = λ n. rec ze (λ n ih. su ih) n
+```
+
+So if initially we had written
+
+```
+last n = transp (nat-η (by-nat n)) (elim (λ n. Fin (succ n)) fzero (λ n ih. fsucc ih) n)
+```
+
+it would typecheck because of the previous derivation, and would erase to `λ n. n`.
+
+Questions:
+- *When to insert these `transp` coercions?* Can we do it in a systematic/decidable way?
+- Can `transp`, `_~>_` etc be internalised so that we can do proofs in the
+  system (probably yes with 2LTT?)
+
+
+
