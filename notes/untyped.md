@@ -173,9 +173,7 @@ _~>_ : (Γ : Con ΓL ΓC) → TmC ΓC → TmC ΓC → U
 rec-η : Num Γ s → rec s ze su ~> s
 -- + rfl,sym,trs
 
--- Two options here
 transp : aC ~> aC' → Tm Γ A aL aC → Tm Γ A aL aC'
-transp-id : aC ~> aC' → Tm Γ A aL aC = Tm Γ A aL aC'
 ```
 
 ```
@@ -238,4 +236,39 @@ Questions:
   system (probably yes with 2LTT?)
 
 
+### Internalising `transp`
 
+First, let's slightly refine the type predicates. Let's instead have
+
+```
+Form : ConL → U
+num : Form ΓL
+fn : (A : Ty ΓL a) → Form (ΓL , A) → Form ΓL
+none : Form ΓL
+el : TmL ΓL U → Form ΓL
+
+Ty : (ΓL : ConL) → Form ΓL → U
+Nat : Ty ΓL num
+Fin : TmL ΓL Nat → Ty ΓL num
+Π : (A : Ty ΓL a) → Ty (ΓL , A) b → Ty ΓL (Π A B) (fn A b)
+Unit : Ty ΓL none
+U : Ty ΓL none
+El : (u : TmL ΓL U) → Ty ΓL (el u)
+```
+
+
+Now the rules become
+
+```
+Red : (Γ : Con ΓL ΓC) → TmC ΓC → TmC ΓC → U
+num-η : {A : Ty ΓL num} → Tm Γ A aL aC → Red Γ (rec aC ze su) aC
+```
+
+
+If we could get a decision procedure like
+```
+∀ a b. isContr (Red Γ a b) + (Red Γ a b → ⊥)
+```
+that would be really nice. (should only be for a subset of Red)
+
+Question still remains: how to integrate Red nicely in the language.
