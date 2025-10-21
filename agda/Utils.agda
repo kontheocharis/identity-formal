@@ -3,20 +3,27 @@ module Utils where
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Vec using (Vec; []; _∷_; lookup; map)
 open import Data.Nat hiding (_^_)
+open import Level using (Level; _⊔_; suc)
 
 open import Axiom.Extensionality.Propositional using (Extensionality)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; cong₂; subst)
 open import Data.Vec.Relation.Unary.All using (All; []; _∷_)
 
+variable
+  ℓ ℓ' : Level
+
 postulate
-  funext : ∀ {i j} → Extensionality i j
+  funext : Extensionality ℓ ℓ'
 
 {-# BUILTIN REWRITE _≡_ #-}
 
 infix 4 _≡[_]_
 
-_≡[_]_ : ∀ {i} {A B : Set i} (a : A) (p : A ≡ B) (b : B) → Set i
-_≡[_]_ {i} {A} {B} a p b = subst (λ s → s) p a ≡ b
+coe : ∀ {A B : Set ℓ} (p : A ≡ B) → A → B
+coe p = subst (λ s → s) p
+
+_≡[_]_ : ∀ {A B : Set ℓ} (a : A) (p : A ≡ B) (b : B) → Set ℓ
+_≡[_]_ {A} {B} a p b = coe p a ≡ b
 
 pure : ∀ {A : Set} → A → Maybe A
 pure = just
