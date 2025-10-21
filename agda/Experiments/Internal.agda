@@ -72,9 +72,9 @@ postulate
 
   ze : Ex
   su : Ex → Ex
-  rec : Ex → (Ex → Ex → Ex) → Ex → Ex
-  rec-η1 : rec ze (λ x y → su x) ∣ a ∣ ≡ ∣ a ∣
-  rec-η2 : rec ze (λ x y → su y) ∣ a ∣ ≡ ∣ a ∣
+  rec : Ex → (Ex → Ex) → Ex → Ex
+  rec-η : {a : Tm ω A} → rec ze su ∣ a ∣ ≡ ∣ a ∣
+  -- rec-η2 : rec ze (λ x y → su y) ∣ a ∣ ≡ ∣ a ∣
   
 postulate
   lm : (Ex → Ex) → Ex
