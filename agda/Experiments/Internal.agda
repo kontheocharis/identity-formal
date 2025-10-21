@@ -2,114 +2,140 @@
 module Experiments.Internal where
 
 open import Relation.Binary.PropositionalEquality.Core 
-
--- ᵏ : ∀ {A B : Set} → A → (A → B) → B
+open import Data.Product using (Σ; _,_; Σ-syntax; proj₁; proj₂)
   
 {-# BUILTIN REWRITE _≡_ #-}
 
 postulate
   $ : Prop
-  # : Prop
   
 ●$_ : ({{_ : $}} → Set) → Set
-●$_ A = {{_ : $}} → A
+●$_ A = {{p : $}} → A
+
+data Mode : Set where
+  z : Mode
+  ω : Mode
   
-●#_ : ({{_ : #}} → Set) → Set
-●#_ A = {{_ : #}} → A
+_*_ : Mode → Mode → Mode
+z * j = z
+j * z = z
+ω * ω = ω
 
-data _≡#_ {A : Set} : ●# A → ●# A → Set where
-  refl :  (a : ●# A) → a ≡# a
-
-{-# BUILTIN REWRITE _≡#_ #-}
-
-data _≡$_ {A : Set} : ●$ A → ●$ A → Set where
-  refl :  (a : ●$ A) → a ≡$ a
-
-{-# BUILTIN REWRITE _≡$_ #-}
+variable
+  i j : Mode
   
 postulate
   Ty : Set
-  Tm : ●# Ty → Set
-  Tm$ : Set
-  
+  Tm : Mode → Ty → Set
+  Ex : Set
+
 variable
-  A B C : ●# Ty
-  a b c : Tm A
-  a$ b$ c$ : Tm$
+  A B C : Ty
+  X Y Z : Tm _ _ → Ty
+  a b c : Tm _ _
+  f g h : (a : Tm _ _) → Tm _ _
+  a$ b$ c$ : Ex
   
 postulate
-  $∣_∣ : ●$ Tm A → Tm$
-  $⟨_⟩ : Tm$ → ●$ Tm A
+  [_] : Tm ω A → Tm z A 
+
+  ∣_∣ : {A : ●$ Ty} → ●$ (Tm ω A) → Ex
+  ⟨_⟩ : ●$ (Ex → Tm ω A)
+  ∅ : ●$ Tm z A
+
+⟨_⟩by_ : Ex → $ → Tm ω A
+⟨ e ⟩by p = ⟨_⟩ {{p = p}} e
+
+abs : {A : ●$ Ty} → ((p : $) → Tm ω (A {{p}})) → Ex
+abs f = ∣ (λ {{p}} → f p) ∣
+
+syntax abs (λ p → x) = ∣ p ⇒ x ∣
+
+[_]' : Tm j A → Tm z A
+[_]' {j = ω} a = [ a ]
+[_]' {j = z} a = a
   
 postulate
-  Raw : Ty
-  raw : Tm$ → Tm Raw
-  unraw : Tm Raw → Tm$
+  Spec : Ty → Ex → Ty
 
-  raw-$ : $∣ raw a$ ∣ ≡ a$
-  {-# REWRITE raw-$ #-}
+  spec : (t : Tm ω A) → Tm ω (Spec A ∣ t ∣)
+  specz : (t : Tm z A) → Tm z (Spec A a$)
+  unspec : Tm i (Spec A a$) → Tm i A
   
-  raw-unraw : raw (unraw a) ≡ a
-  unraw-raw : unraw (raw a$) ≡ a$
-  {-# REWRITE raw-unraw unraw-raw #-}
+  ∣spec∣ : ∣ spec a ∣ ≡ ∣ a ∣
+  ∣unspec∣ : ∣ unspec {A = A} {a$ = a$} a ∣ ≡ a$
   
-postulate
-  Spec : Ty → Tm Raw → Ty
-
-  spec : (t : Tm A) → Tm (Spec A (raw $∣ t ∣))
-  unspec : Tm (Spec A a) → Tm A
-  
-  spec-$ : $∣ spec a ∣ ≡ $∣ a ∣
-  unspec-$ : $∣ unspec {a = b} a ∣ ≡ unraw b
-  {-# REWRITE spec-$ unspec-$ #-}
-  
-  spec-unspec : unspec (spec a) ≡ a
-  unspec-spec : spec (unspec a) ≡ a
-  {-# REWRITE spec-unspec unspec-spec #-}
+  [spec] : [ spec a ] ≡ specz [ a ]
+  [unspec] : [ unspec a ] ≡ unspec [ a ]
   
 postulate
-  ze : Tm$
-  su : Tm$ → Tm$
-  nat-rec : Tm$ → (Tm$ → Tm$ → Tm$) → Tm$ → Tm$
-  nat-rec-η1 : nat-rec ze (λ x y → su x) $∣ a ∣ ≡$ $∣ a ∣
-  nat-rec-η2 : nat-rec ze (λ x y → su y) $∣ a ∣ ≡$ $∣ a ∣
 
-postulate
-  Nat : Ty
-  zero : Tm Nat
-  suc : Tm Nat → Tm Nat
-  nat-ind : (P : ●# Tm Nat → Ty) →
-            Tm (P zero) →
-            ((n : Tm Nat) → Tm (P n) → Tm (P (suc n))) →
-            (n : Tm Nat) → Tm (P n)
-  nat-ind-zero : ∀ {P z s} → nat-ind P z s zero ≡# z
-  nat-ind-suc : ∀ {P z s n} → nat-ind P z s (suc n) ≡# s n (nat-ind P z s n)
-  
-  zero-$ : $∣ zero ∣ ≡ ze
-  suc-$ : $∣ suc a ∣ ≡ su $∣ a ∣
-  nat-ind-$ : ∀ {P z s n}
-    → $∣ nat-ind P z s n ∣ ≡ nat-rec $∣ z ∣ (λ x y → $∣ s $⟨ x ⟩ $⟨ y ⟩ ∣) $∣ n ∣
+  ze : Ex
+  su : Ex → Ex
+  rec : Ex → (Ex → Ex → Ex) → Ex → Ex
+  rec-η1 : rec ze (λ x y → su x) ∣ a ∣ ≡ ∣ a ∣
+  rec-η2 : rec ze (λ x y → su y) ∣ a ∣ ≡ ∣ a ∣
   
 postulate
-  Fin : ●# Tm Nat → Ty  
-  fzero : {n : ●# Tm Nat} → Tm (Fin (suc n))
-  fsuc : {n : ●# Tm Nat} → Tm (Fin n) → Tm (Fin (suc n))
-  fin-ind : (P : {n : ●# Tm Nat} → ●# Tm (Fin n) → Ty)
-            → ({n : ●# Tm Nat} → Tm (P (fzero {n})))
-            → ({n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k) → Tm (P (fsuc k)))
-            → {n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k)
+  lm : (Ex → Ex) → Ex
+  ap : Ex → Ex → Ex
 
-  fzero-$ : ∀ {n} → $∣ fzero {n} ∣ ≡ ze
-  fsuc-$ : ∀ {n k} → $∣ fsuc {n} k ∣ ≡ su $∣ k ∣
-  fin-ind-$ : ∀ {P : {n : ●# Tm Nat} → ●# Tm (Fin n) → Ty}
-      {fz : {n : ●# Tm Nat} → Tm (P (fzero {n}))}
-      {fs : {n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k) → Tm (P (fsuc k))}
-      {k : {n : ●# Tm Nat} → ●# Tm (Fin n)}
-    → $∣ fin-ind P fz fs k ∣ ≡ nat-rec $∣ fz ∣ {!   !} {!   !}
+  Π : (j : Mode) → (A : Ty) → (Tm z A → Ty) → Ty
+  
+↑ : ∀ {M : Set} → (Tm z A → M) → (Tm j A → M) 
+↑ x t = x [ t ]'
+  
+postulate
+  lam : ((a : Tm j A) → Tm i (↑ X a)) → Tm i (Π j A X)
+  app : Tm i (Π j A X) → (a : Tm (i * j) A) → Tm i (↑ X a)
+  lam-app : app {i = z} (lam f) a ≡ f a
 
---  {{_ : $}}  
+  ∣lam∣ : ∀ {A} {X} {f : (a : Tm ω A) → Tm ω (↑ X a)}
+    → ∣ lam {X = X} f ∣ ≡ lm (λ x → ∣ f (⟨ x ⟩) ∣)
+  ∣app∣ : {a : Tm ω (Π ω A X)} {b : Tm ω A} → ∣ app a b ∣ ≡ ap (∣ a ∣) (∣ b ∣)
+  ∣lamz∣ : {f : (a : Tm z A) → Tm ω (↑ X a)} → ∣ lam {X = X} f ∣ ≡ ∣ f ∅ ∣
+  ∣appz∣ : {a : Tm ω (Π z A X)} {b : Tm z A} → ∣ app a b ∣ ≡ ∣ a ∣
+  
+  [lam] : [ lam f ] ≡ lam (λ x → [ f x ])
+  [app] : [ app a b ] ≡ app [ a ] [ b ]
 
-  -- unspec : (t : Tm# A) → Tm (Spec A t)
 
-  -- Spec : (A : # → Ty) → Tm# → Prop
+-- postulate
+--   Nat : Ty
+--   zero : Tm Nat
+--   suc : Tm Nat → Tm Nat
+--   nat-ind : (P : ●# Tm Nat → Ty) →
+--             Tm (P zero) →
+--             ((n : Tm Nat) → Tm (P n) → Tm (P (suc n))) →
+--             (n : Tm Nat) → Tm (P n)
+--   nat-ind-zero : ∀ {P z s} → nat-ind P z s zero ≡# z
+--   nat-ind-suc : ∀ {P z s n} → nat-ind P z s (suc n) ≡# s n (nat-ind P z s n)
+  
+--   zero-$ : $∣ zero ∣ ≡ ze
+--   suc-$ : $∣ suc a ∣ ≡ su $∣ a ∣
+--   nat-ind-$ : ∀ {P z s n}
+--     → $∣ nat-ind P z s n ∣ ≡ nat-rec $∣ z ∣ (λ x y → $∣ s $⟨ x ⟩ $⟨ y ⟩ ∣) $∣ n ∣
+  
+-- postulate
+--   Fin : ●# Tm Nat → Ty  
+--   fzero : {n : ●# Tm Nat} → Tm (Fin (suc n))
+--   fsuc : {n : ●# Tm Nat} → Tm (Fin n) → Tm (Fin (suc n))
+--   fin-ind : (P : {n : ●# Tm Nat} → ●# Tm (Fin n) → Ty)
+--             → ({n : ●# Tm Nat} → Tm (P (fzero {n})))
+--             → ({n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k) → Tm (P (fsuc k)))
+--             → {n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k)
+
+--   fzero-$ : ∀ {n} → $∣ fzero {n} ∣ ≡ ze
+--   fsuc-$ : ∀ {n k} → $∣ fsuc {n} k ∣ ≡ su $∣ k ∣
+--   fin-ind-$ : ∀ {P : {n : ●# Tm Nat} → ●# Tm (Fin n) → Ty}
+--       {fz : {n : ●# Tm Nat} → Tm (P (fzero {n}))}
+--       {fs : {n : ●# Tm Nat} → (k : ●# Tm (Fin n)) → Tm (P k) → Tm (P (fsuc k))}
+--       {k : {n : ●# Tm Nat} → ●# Tm (Fin n)}
+--     → $∣ fin-ind P fz fs k ∣ ≡ nat-rec $∣ fz ∣ {!   !} {!   !}
+
+-- --  {{_ : $}}  
+
+--   -- unspec : (t : Tm# A) → Tm (Spec A t)
+
+--   -- Spec : (A : # → Ty) → Tm# → Prop
 
