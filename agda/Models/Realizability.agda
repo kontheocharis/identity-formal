@@ -49,9 +49,9 @@ module _ {ℓ'} (A : PCA) where
       
   open Tyᴿ
   
-  -- Tyᴿ-eq : {Γ : Conᴿ} {T U : Tyᴿ Γ} →
-  --          (∀ γ γ' a → T .sem γ γ' a ≡ U .sem γ γ' a) → T ≡ U
-  -- Tyᴿ-eq h = cong (λ sem → record { sem = sem }) (funext (λ γ → funext (λ γ' → funext (h γ γ'))))
+  Tyᴿ-eq : {Γ : Conᴿ} {T U : Tyᴿ Γ} →
+           (∀ γ γ' a → T .sem γ γ' a ≡ U .sem γ γ' a) → T ≡ U
+  Tyᴿ-eq h = cong (λ sem → record { sem = sem }) (funext (λ γ → funext (λ γ' → funext (h γ γ'))))
 
   record Tmzᴿ (Γ : Conᴿ) (T : Tyᴿ Γ) : Set (lsuc ℓ') where
     field
@@ -65,9 +65,9 @@ module _ {ℓ'} (A : PCA) where
 
   record Tmᴿ (Γ : Conᴿ) (T : Tyᴿ Γ) (t : Tmzᴿ Γ T) : Set (lsuc ℓ') where
     field
-      syn : ∣ A [ 0 ]∣^ 1
-      sem' : ∀ γ γ' → T .sem γ γ' syn
-      proj : ∀ γ γ' → (T .sem) γ γ' syn → (T .sem) γ γ' ([ ⌜ I ⌝ ])
+      syn : ∣ A [ Γ .syn ]∣^ 1
+      sem' : ∀ γ γ' → T .sem γ γ' (compose syn γ)
+      proj : ∀ γ γ' → (T .sem) γ γ' (compose syn γ) → (T .sem) γ γ' ([ ⌜ I ⌝ ])
       
   open Tmᴿ
   
@@ -103,15 +103,17 @@ module _ {ℓ'} (A : PCA) where
   M-subs .assoc {ρ = ρ} {σ = σ} {τ = τ}
     = Subᴿ-eq (sym (compose-assoc (ρ .syn) (σ .syn) (τ .syn)))
       (λ γ γ' → {!  refl !})
-  -- M-subs∘id = {!   !}
-  -- M-subs .id∘ = {!   !}
-  -- M-subs ._[_] = {!   !}
-  -- M-subs .[id] = {!   !}
+  M-subs .∘id = {!   !}
+  M-subs .id∘ = {!   !}
+  (M-subs [ T ]) σ .sem γ γ' a = T .sem (compose (σ .syn) γ) (σ .sem γ γ') a
+  M-subs .[id] = Tyᴿ-eq λ γ γ' a → {! ? !}
   -- M-subs .[∘] = {!   !}
-  -- M-subs ._[_]Tmz = {!   !}
+  (M-subs [ x ]Tmz) σ .sem γ γ' = x .sem (compose (σ .syn) γ) (σ .sem γ γ')
   -- M-subs .[id]Tmz = {!   !}
   -- M-subs .[∘]Tmz = {!   !}
-  -- M-subs ._[_]Tm = {!   !}
+  (M-subs [ x ]Tm) σ .syn = compose (x .syn) (σ .syn)
+  (M-subs [ x ]Tm) σ .sem' γ γ' = subst (λ q → _ .sem _ _ q) ({!  syn (compose-assoc ? ?) !}) (x .sem' (compose (σ .syn) γ) (σ .sem γ γ'))
+  (M-subs [ x ]Tm) σ .proj = {!   !}
   -- M-subs .[id]Tm = {!   !}
   -- M-subs .[∘]Tm = {!   !}
   -- M-subs ._[_]Ex = {!   !}
