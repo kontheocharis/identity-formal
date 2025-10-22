@@ -38,7 +38,6 @@ record OpTT-sorts : Set (suc (ℓ ⊔ ℓ')) where
     Tmz  : ∀ Γ → Ty Γ → Set ℓ'
     Tm  : ∀ Γ A → Tmz Γ A → Set ℓ'
     Ex : Con → Set ℓ'
-    $ : Set ℓ
     $∈_ : Con → Set ℓ'
     
 module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
@@ -51,7 +50,6 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
     t u v : Tmz _ _
     t' u' v' : Tm _ _ _
     e f g : Ex _
-    μ ν : $
     ξ ϕ : $∈ _
 
   -- OpTT substitution calculus
@@ -90,7 +88,7 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
       [∘]$ : ξ [ σ ∘ τ ]$ ≡ (ξ [ σ ]$) [ τ ]$
       
       -- $ is a proposition
-      $-prop : μ ≡ ν
+      $-prop : ξ ≡ ϕ
       
       -- Terminal object
       ∙ : Con
