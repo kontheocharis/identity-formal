@@ -1,6 +1,6 @@
 module Model where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; dcong₂; trans; sym)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym; subst)
 open import Level using (Level; _⊔_; suc)
 
 open import Utils
@@ -32,9 +32,11 @@ variable
 record OpTT-sorts : Set (suc (ℓ ⊔ ℓ')) where
   field
     Con : Set ℓ
-    Sub : Con → Con → Set ℓ'
+    Subz : Con → Con → Set ℓ'
     Ty : Con → Set ℓ
-    Tm  : Mode → ∀ Γ → Ty Γ → Set ℓ'
+    Tmz  : ∀ Γ → Ty Γ → Set ℓ'
+    Tm  : ∀ Γ A → Tmz Γ A → Set ℓ'
+    Sub : ∀ Γ Δ → Subz Γ Δ → Set ℓ'
     Ex : Con → Set ℓ'
     $ : Con → Set ℓ
     
@@ -43,9 +45,11 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
 
   variable
     Γ Δ Θ : Con
-    ρ σ τ : Sub _ _
+    ρ σ τ : Subz _ _
+    ρ' σ' τ' : Sub _ _ _
     A' A B : Ty _
-    t u v : Tm _ _ _
+    t u v : Tmz _ _
+    t' u' v' : Tm _ _ _
     e f g : Ex _
     μ ν : $ _
 
@@ -53,29 +57,41 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
   record OpTT-subst : Set (suc (ℓ ⊔ ℓ')) where
     field
       -- Category
-      id : Sub Γ Γ
-      _∘_ : Sub Δ Θ → Sub Γ Δ → Sub Γ Θ
+      id : Subz Γ Γ
+      _∘_ : Subz Δ Θ → Subz Γ Δ → Subz Γ Θ
       assoc : (ρ ∘ (σ ∘ τ)) ≡ ((ρ ∘ σ) ∘ τ)
       ∘id : (id ∘ σ) ≡ σ
       id∘ : (σ ∘ id) ≡ σ
+
+      -- Displayed category
+      id' : Sub Γ Γ id
+      _∘'_ : Sub Δ Θ τ → Sub Γ Δ σ → Sub Γ Θ (τ ∘ σ)
+      assoc' : (ρ' ∘' (σ' ∘' τ')) ≡[ cong (Sub _ _) assoc ] ((ρ' ∘' σ') ∘' τ')
+      ∘id' : (id' ∘' σ') ≡[ cong (Sub _ _) ∘id ] σ'
+      id∘' : (σ' ∘' id') ≡[ cong (Sub _ _) id∘ ] σ'
       
       -- Types presheaf
-      _[_] : Ty Θ → Sub Γ Θ → Ty Γ
+      _[_] : Ty Θ → Subz Γ Θ → Ty Γ
       [id] : A [ id ] ≡ A
       [∘] : A [ σ ∘ τ ] ≡ (A [ σ ]) [ τ ]
       
       -- Terms presheaf
-      _[_]Tm : Tm i Θ A → (σ : Sub Γ Θ) → Tm i Γ (A [ σ ])
-      [id]Tm : t [ id ]Tm ≡[ cong (Tm _ _) [id] ] t
-      [∘]Tm : t [ σ ∘ τ ]Tm ≡[ cong (Tm _ _) [∘] ] (t [ σ ]Tm) [ τ ]Tm
+      _[_]Tmz : Tmz Θ A → (σ : Subz Γ Θ) → Tmz Γ (A [ σ ])
+      [id]Tmz : t [ id ]Tmz ≡[ cong (Tmz _) [id] ] t
+      [∘]Tmz : t [ σ ∘ τ ]Tmz ≡[ cong (Tmz _) [∘] ] (t [ σ ]Tmz) [ τ ]Tmz
       
+      -- Relevant terms presheaf
+      _[_]Tm : Tm Θ A t → Sub Γ Θ σ → Tm Γ (A [ σ ]) (t [ σ ]Tmz)
+      [id]Tm : t [ id ]Tmz ≡[ cong (Tmz _) [id] ] t
+      [∘]Tm : t [ σ ∘ τ ]Tmz ≡[ cong (Tmz _) [∘] ] (t [ σ ]Tmz) [ τ ]Tmz
+
       -- Expressions presheaf
-      _[_]Ex : Ex Θ → (σ : Sub Γ Θ) → Ex Γ
+      _[_]Ex : Ex Θ → (σ : Subz Γ Θ) → Ex Γ
       [id]Ex : e [ id ]Ex ≡ e
       [∘]Ex : e [ σ ∘ τ ]Ex ≡ (e [ σ ]Ex) [ τ ]Ex
       
       -- $ presheaf
-      _[_]$ : $ Θ → (σ : Sub Γ Θ) → $ Γ
+      _[_]$ : $ Θ → (σ : Subz Γ Θ) → $ Γ
       [id]$ : μ [ id ]$ ≡ μ
       [∘]$ : μ [ σ ∘ τ ]$ ≡ (μ [ σ ]$) [ τ ]$
       
@@ -84,30 +100,41 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
       
       -- Terminal object
       ∙ : Con
-      ε : Sub Γ ∙
+      ε : Subz Γ ∙
+      ε' : Sub Γ ∙ ε
       ∃!ε : ε ≡ σ
-
-      -- Natural transformation of terms (should be derivable in the syntax)
-      0×_ : Tm i Γ A → Tm z Γ A
-      0×0 : 0× t ≡ t
-      0×[] : (0× t) [ σ ]Tm ≡ 0× (t [ σ ]Tm)
+      ∃!ε' : ε' ≡[ cong (Sub _ _) ∃!ε ] σ'
 
       -- Context extension of terms
       _▷[_]_ : (Γ : Con) → Mode → Ty Γ → Con
-      p : Sub (Γ ▷[ i ] A) Γ
-      q : j ≤ i → Tm j (Γ ▷[ i ] A) (A [ p ])
-      _,_ : (σ : Sub Γ Δ) → Tm i Γ (A [ σ ]) → Sub Γ (Δ ▷[ i ] A)
-      ,∘ : (σ , t) ∘ τ ≡ (σ ∘ τ) , coe (cong (Tm _ _) (sym [∘]))(t [ τ ]Tm)
-      p,q : p {Γ} {i} {A} , q reflex ≡ id
-      p∘, : p ∘ (σ , t) ≡ σ
-      qω[,] : q {A = A} ω≤ω [ σ , t ]Tm ≡[ cong (Tm _ _) (trans (sym [∘]) (cong (A [_]) p∘,)) ] t
-      qz[,] : q {A = A} (z≤ i) [ σ , t ]Tm ≡[ cong (Tm _ _) (trans (sym [∘]) (cong (A [_]) p∘,)) ] (0× t)
+      p : Subz (Γ ▷[ i ] A) Γ
+      q : Tmz (Γ ▷[ i ] A) (A [ p ])
+      _,[_]_ : (σ : Subz Γ Δ) → (i : Mode) → Tmz Γ (A [ σ ]) → Subz Γ (Δ ▷[ i ] A)
+      ,∘ : (σ ,[ i ] t) ∘ τ ≡ ((σ ∘ τ) ,[ i ] subst (Tmz _) (sym [∘]) (t [ τ ]Tmz))
+      p,q : p {Γ} {i} {A} ,[ i ] q ≡ id
+      p∘, : p ∘ (σ ,[ i ] t) ≡ σ
+      q[,] : q [ σ ,[ i ] t ]Tmz ≡[ cong (Tmz _) (trans (sym [∘]) (cong (A [_]) p∘,)) ] t
+
+      -- Context extension of relevant terms 
+      p' : Sub (Γ ▷[ i ] A) Γ p
+      q' : Tm (Γ ▷[ ω ] A) (A [ p ]) q
+      _,[z]'_ : (σ' : Sub Γ Δ σ) → (t : Tmz Γ (A [ σ ])) → Sub Γ (Δ ▷[ z ] A) (σ ,[ z ] t)
+      _,[ω]'_ : (σ' : Sub Γ Δ σ) → Tm Γ (A [ σ ]) t → Sub Γ (Δ ▷[ ω ] A) (σ ,[ ω ] t)
+      ,[z]∘' : {τ' : Sub Γ Δ τ} → (σ' ,[z]' t) ∘' τ'
+                ≡[ cong (Sub _ _) ,∘ ] (σ' ∘' τ') ,[z]' subst (Tmz _) (sym [∘]) (t [ τ ]Tmz)
+      ,[ω]∘' : {τ' : Sub Γ Δ τ} → (σ' ,[ω]' t') ∘' τ'
+                ≡[ cong (Sub _ _) ,∘ ] (σ' ∘' τ') ,[ω]' subst (λ p → Tm _ _ {!   !}) (sym [∘]Tm) (t' [ τ' ]Tm)
+
+    --   -- Variables for relevant terms
+    --   q' : Tm (Γ ▷[ ω ] A) (A [ p ]) q
+    --   _[p]' : Tm Γ A t → Tm (Γ ▷[ ω ] A) (A [ p ]) (t [ p ]Tmz)
+    --   _[<_>]' : Tm (Γ ▷[ ω ] A) B t → Tm Γ A u → Tm Γ (B [ < u > ]) (t [ < u > ]Tmz)
       
       -- Context extension of expressions
       _▷Λ : Con → Con
-      pΛ : Sub (Γ ▷Λ) Γ
+      pΛ : Subz (Γ ▷Λ) Γ
       qΛ : Ex (Γ ▷Λ)
-      _,Λ_ : (σ : Sub Γ Δ) → Ex Γ → Sub Γ (Δ ▷Λ)
+      _,Λ_ : (σ : Subz Γ Δ) → Ex Γ → Subz Γ (Δ ▷Λ)
       ,∘Λ : (σ ,Λ e) ∘ τ ≡ (σ ∘ τ) ,Λ (e [ τ ]Ex)
       pΛ,qΛ : pΛ {Γ} ,Λ qΛ ≡ id
       pΛ∘,Λ : pΛ ∘ (σ ,Λ e) ≡ σ
@@ -115,30 +142,33 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
       
       -- Context extension of $
       _▷$ : Con → Con
-      p$ : Sub (Γ ▷$) Γ
+      p$ : Subz (Γ ▷$) Γ
       q$ : $ (Γ ▷$)
-      _,$_ : (σ : Sub Γ Δ) → $ Γ → Sub Γ (Δ ▷$)
+      _,$_ : (σ : Subz Γ Δ) → $ Γ → Subz Γ (Δ ▷$)
       ,∘$ : (σ ,$ μ) ∘ τ ≡ (σ ∘ τ) ,$ (μ [ τ ]$)
       p$,q$ : p$ {Γ} ,$ q$ ≡ id
       p$∘,$ : p$ ∘ (σ ,$ μ) ≡ σ
       q$[,] : q$ [ σ ,$ μ ]$ ≡ μ
       
       -- Conversion between terms and expressions
-      ∣_∣ : Tm ω (Γ ▷$) A → Ex Γ
-      ⟨_⟩[_] : Ex Γ → (A : Ty (Γ ▷$)) → Tm ω (Γ ▷$) A
-      ∣⟨⟩∣ : ∣ ⟨ e ⟩[ A ] ∣ ≡ e
-      ⟨∣∣⟩ : ⟨ ∣ t ∣ ⟩[ A ] ≡ t
-      ∅ : Tm z (Γ ▷$) A
+      ∣_∣ : Tm (Γ ▷$) A t → Ex Γ
+      ⟨_⟩[_][_] : Ex Γ → ∀ (A : Ty (Γ ▷$)) t → Tm (Γ ▷$) A t
+      ∣⟨⟩∣ : ∣ ⟨ e ⟩[ A ][ t ] ∣ ≡ e
+      ⟨∣∣⟩ : ⟨ ∣ t' ∣ ⟩[ A ][ t ] ≡ t'
+      ∅ : Tmz (Γ ▷$) A
       ∅-sing : ∅ ≡ t
       
-    _⁺Λ : Sub Γ Δ → Sub (Γ ▷Λ) (Δ ▷Λ)
+    _⁺Λ : Subz Γ Δ → Subz (Γ ▷Λ) (Δ ▷Λ)
     ρ ⁺Λ = (ρ ∘ pΛ) ,Λ qΛ
 
-    _⁺ : (ρ : Sub Γ Δ) → Sub (Γ ▷[ j ] (A [ ρ ])) (Δ ▷[ j ] A)
-    ρ ⁺ = (ρ ∘ p) , coe (cong (Tm _ _) (sym [∘])) (q reflex)
+    _⁺ : (ρ : Subz Γ Δ) → Subz (Γ ▷[ j ] (A [ ρ ])) (Δ ▷[ j ] A)
+    ρ ⁺ = (ρ ∘ p) ,[ _ ] coe (cong (Tmz _) (sym [∘])) q
     
-    _⁺$ : Sub Γ Δ → Sub (Γ ▷$) (Δ ▷$)
+    _⁺$ : Subz Γ Δ → Subz (Γ ▷$) (Δ ▷$)
     ρ ⁺$ = (ρ ∘ p$) ,$ q$
+    
+    <_> : Tmz Γ A → Subz Γ (Γ ▷[ j ] A)
+    < t > = id ,[ _ ] (t [ id ]Tmz)
     
       
   module _ (subst : OpTT-subst) where
@@ -167,34 +197,34 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
         Π : (j : Mode) → Ty Γ → Ty (Γ ▷[ j ] A) → Ty Γ
         Π[] : (Π j A B) [ σ ] ≡ Π j (A [ σ ]) (B [ σ ⁺ ])
         
-        lam : Tm i (Γ ▷[ j ] A) B → Tm i Γ (Π j A B)
-        lam[] : (lam t) [ σ ]Tm ≡[ cong (Tm _ _) Π[] ] lam (t [ σ ⁺ ]Tm)
+        lam : Tmz (Γ ▷[ j ] A) B → Tmz Γ (Π j A B)
+        lam[] : (lam t) [ σ ]Tmz ≡[ cong (Tmz _) Π[] ] lam (t [ σ ⁺ ]Tmz)
 
-        app : Tm i Γ (Π j A B) → Tm i (Γ ▷[ j ] A) B
-        
-      app' : Tm i Γ (Π j A B) → (a : Tm (i * j) Γ A) → Tm i Γ (B [ id , ({!   !} [ id ]Tm) ])
-      app' t u = {!   !}
-        
-      field
-        
-        ∣lamω∣ : ∣ lam {i = ω} {j = ω} t ∣ ≡ lamΛ (∣ t [ (pΛ ⁺$) , ⟨ qΛ ⟩[ _ ] ]Tm ∣)
-        ∣lamz∣ : ∣ lam {i = ω} {j = z} t ∣ ≡ ∣ t [ id , ∅ ]Tm ∣
-        ∣appω∣ : ∣ (app {i = ω} {j = ω} t) [ (p$ ∘ σ) , u ]Tm ∣ ≡ {!   !}
+        app : Tmz Γ (Π j A B) → Tmz (Γ ▷[ j ] A) B
 
-        -- Nat : Ty Γ
-        -- Nat[] : (Nat) [ σ ] ≡ Nat
-        -- zero : Tm i Γ Nat
-        -- zero[] : (zero) [ σ ]Tm ≡[ cong (Tm _ _) Nat[] ] zero
-        -- succ : Tm i Γ Nat → Tm i Γ Nat
-        -- succ[] : (suc t) [ σ ]Tm ≡[ cong (Tm _ _) Nat[] ] succ (t [ σ ]Tm)
+        lam' : Tm (Γ ▷[ j ] A) B t → Tm Γ (Π j A B) (lam t)
+        app'ω : Tm Γ (Π ω A B) t → Tm Γ A u → Tm Γ (B [ < u > ]) (app t [ < u > ]Tmz)
+        app'z : Tm Γ (Π z A B) t → (u : Tmz Γ A) → Tm Γ (B [ < u > ]) (app t [ < u > ]Tmz)
+        
+        
+        -- ∣lam'∣ : ∣ lam' {j = ω} t' ∣ ≡ lamΛ (∣ {! t' [< ? >]' !} ∣)
+--         -- ∣lamz∣ : ∣ lam {i = ω} {j = z} t ∣ ≡ ∣ t [ id , ∅ ]Tm ∣
+--         -- ∣appω∣ : ∣ (app {i = ω} {j = ω} t) [ (p$ ∘ σ) , u ]Tm ∣ ≡ {!   !}
 
-record OpTT : Set (suc (ℓ ⊔ ℓ')) where
-  field
-    sorts : OpTT-sorts {ℓ} {ℓ'}
-  open OpTT-sorts sorts public
-  field
-    subst : OpTT-subst sorts
-  open OpTT-subst subst public
-  field
-    str : OpTT-str sorts subst
-  open OpTT-str str public
+--         -- Nat : Ty Γ
+--         -- Nat[] : (Nat) [ σ ] ≡ Nat
+--         -- zero : Tm i Γ Nat
+--         -- zero[] : (zero) [ σ ]Tm ≡[ cong (Tm _ _) Nat[] ] zero
+--         -- succ : Tm i Γ Nat → Tm i Γ Nat
+--         -- succ[] : (suc t) [ σ ]Tm ≡[ cong (Tm _ _) Nat[] ] succ (t [ σ ]Tm)
+
+-- -- record OpTT : Set (suc (ℓ ⊔ ℓ')) where
+-- --   field
+-- --     sorts : OpTT-sorts {ℓ} {ℓ'}
+-- --   open OpTT-sorts sorts public
+-- --   field
+-- --     subst : OpTT-subst sorts
+-- --   open OpTT-subst subst public
+-- --   field
+-- --     str : OpTT-str sorts subst
+-- --   open OpTT-str str public
