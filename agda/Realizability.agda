@@ -87,6 +87,7 @@ module PCAUtils (A : PCA) where
   sub ⌜ x ⌝ σ = ⌜ x ⌝
   sub (x ∙' x₁) σ = sub x σ ∙' sub x₁ σ
   
+  
   identity : ∣ A [ n ]∣^ n
   identity = tabulate v
   

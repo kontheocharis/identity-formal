@@ -38,7 +38,8 @@ record OpTT-sorts : Set (suc (ℓ ⊔ ℓ')) where
     Tmz  : ∀ Γ → Ty Γ → Set ℓ'
     Tm  : ∀ Γ A → Tmz Γ A → Set ℓ'
     Ex : Con → Set ℓ'
-    $ : Con → Set ℓ
+    $ : Set ℓ
+    $∈_ : Con → Set ℓ'
     
 module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
   open OpTT-sorts sorts
@@ -50,7 +51,8 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
     t u v : Tmz _ _
     t' u' v' : Tm _ _ _
     e f g : Ex _
-    μ ν : $ _
+    μ ν : $
+    ξ ϕ : $∈ _
 
   -- OpTT substitution calculus
   record OpTT-subs : Set (suc (ℓ ⊔ ℓ')) where
@@ -81,11 +83,11 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
       _[_]Ex : Ex Θ → Sub Γ Θ → Ex Γ
       [id]Ex : e [ id ]Ex ≡ e
       [∘]Ex : e [ σ ∘ τ ]Ex ≡ (e [ σ ]Ex) [ τ ]Ex
-      
-      -- $ presheaf
-      _[_]$ : $ Θ → (σ : Sub Γ Θ) → $ Γ
-      [id]$ : μ [ id ]$ ≡ μ
-      [∘]$ : μ [ σ ∘ τ ]$ ≡ (μ [ σ ]$) [ τ ]$
+
+      -- Expressions presheaf
+      _[_]$ : $∈ Θ → Sub Γ Θ → $∈ Γ
+      [id]$ : ξ [ id ]$ ≡ ξ
+      [∘]$ : ξ [ σ ∘ τ ]$ ≡ (ξ [ σ ]$) [ τ ]$
       
       -- $ is a proposition
       $-prop : μ ≡ ν
@@ -124,12 +126,12 @@ module _ (sorts : OpTT-sorts {ℓ} {ℓ'}) where
       -- Context extension of $
       _▷$ : Con → Con
       p$ : Sub (Γ ▷$) Γ
-      q$ : $ (Γ ▷$)
-      _,$_ : (σ : Sub Γ Δ) → $ Γ → Sub Γ (Δ ▷$)
-      ,∘$ : (σ ,$ μ) ∘ τ ≡ (σ ∘ τ) ,$ (μ [ τ ]$)
+      q$ : $∈ (Γ ▷$)
+      _,$_ : (σ : Sub Γ Δ) → $∈ Γ → Sub Γ (Δ ▷$)
+      ,∘$ : (σ ,$ ξ) ∘ τ ≡ (σ ∘ τ) ,$ (ξ [ τ ]$)
       p$,q$ : p$ {Γ} ,$ q$ ≡ id
-      p$∘,$ : p$ ∘ (σ ,$ μ) ≡ σ
-      q$[,] : q$ [ σ ,$ μ ]$ ≡ μ
+      p$∘,$ : p$ ∘ (σ ,$ ξ) ≡ σ
+      q$[,] : q$ [ σ ,$ ξ ]$ ≡ ξ -- redundant due to prop but whatever
       
       -- Conversion between terms and expressions
       ∣_∣ : Tm (Γ ▷$) A t → Ex Γ
