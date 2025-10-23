@@ -1,5 +1,5 @@
 {-# OPTIONS --prop --type-in-type #-}
-module Experiments.Internal where
+module Experiments.Internal2 where
 
 open import Relation.Binary.PropositionalEquality.Core 
 open import Data.Product using (Σ; _,_; Σ-syntax; proj₁; proj₂)
@@ -7,7 +7,7 @@ open import Data.Product using (Σ; _,_; Σ-syntax; proj₁; proj₂)
 {-# BUILTIN REWRITE _≡_ #-}
 
 postulate
-  $ # : Prop
+  $ : Prop
   
 M$_ : ({{_ : $}} → Set) → Set
 M$_ A = {{p : $}} → A
@@ -26,73 +26,67 @@ variable
   
 postulate
   Ty : Set
-  Tm : Mode → Ty → Set
+  Tmz : Ty → Set
+  Tm : (A : Ty) → Tmz A → Set
   Ex : Set
 
 variable
   A B C : Ty
-  X Y Z : Tm _ _ → Ty
-  a b c : Tm _ _
-  f g h : (a : Tm _ _) → Tm _ _
+  X Y Z : Tmz _ → Ty
+  X' Y' Z' : ∀ {a} → Tm _ a → Ty
+  a b c : Tmz _
+  a' b' c' : Tm _ _
+  f g h : (a : Tmz _) → Tmz _
   a$ b$ c$ : Ex
   
 postulate
-  [_] : Tm ω A → Tm z A 
-
-  ∣_∣ : {A : M$ Ty} → M$ (Tm ω A) → Ex
-  un∣_∣ : Ex → M$ Tm ω A
-  ∅ : M$ Tm z A
-
-un∣_∣by_ : Ex → $ → Tm ω A
-un∣ e ∣by p = un∣_∣ e {{p = p}} 
-
-abs : {A : M$ Ty} → ((p : $) → Tm ω (A {{p}})) → Ex
-abs f = ∣ (λ {{p}} → f p) ∣
-
-↑_ : Tm i A → Tm z A 
-↑_ {i = z} a = a
-↑_ {i = ω} a = [ a ]
-
-syntax abs (λ p → x) = ∣ p ⇒ x ∣
-
-[_]' : Tm j A → Tm z A
-[_]' {j = ω} a = [ a ]
-[_]' {j = z} a = a
+  ∅ : M$ Tmz A
+  ∣_∣ : {A : M$ Ty} {a : M$ Tmz A} → M$ (Tm A a) → Ex
+  un∣_∣ : Ex → M$ Tm A ∅
   
 postulate
   Spec : Ty → Ex → Ty
 
-  spec : (t : Tm ω A) → Tm ω (Spec A ∣ t ∣)
-  specz : (t : Tm z A) → Tm z (Spec A a$)
-  unspec : Tm i (Spec A a$) → Tm i A
+  specz : (t : Tmz A) → Tmz (Spec A a$)
+  spec : (a' : Tm A a) → Tm (Spec A ∣ a' ∣) (specz a)
+  unspecz : Tmz (Spec A a$) → Tmz A
+  unspec : Tm (Spec A a$) a → Tm A (unspecz a)
   
-  ∣spec∣ : ∣ spec a ∣ ≡ ∣ a ∣
-  ∣unspec∣ : ∣ unspec {A = A} {a$ = a$} a ∣ ≡ a$
-  
-  [spec] : [ spec a ] ≡ specz [ a ]
-  [unspec] : [ unspec a ] ≡ unspec [ a ]
+  ∣spec∣ : ∣ spec a' ∣ ≡ ∣ a' ∣
+  ∣unspec∣ : ∣ unspec {A = A} {a$ = a$} a' ∣ ≡ a$
   
 postulate
 
   ze : Ex
   su : Ex → Ex
   rec : Ex → (Ex → Ex) → Ex → Ex
-  rec-η : {a : Tm ω A} → rec ze su ∣ a ∣ ≡ ∣ a ∣
+  rec-η : {a' : Tm A a} → rec ze su ∣ a' ∣ ≡ ∣ a' ∣
   -- rec-η2 : rec ze (λ x y → su y) ∣ a ∣ ≡ ∣ a ∣
   
 postulate
   lm : (Ex → Ex) → Ex
   ap : Ex → Ex → Ex
 
-  Π : (j : Mode) → (A : Ty) → (Tm z A → Ty) → Ty
+postulate
+  Π0 : (A : Ty) → (Tmz A → Ty) → Ty
+  lam0z : ((a : Tmz A) → Tmz (X a)) → Tmz (Π0 A X)
+  app0z : Tmz (Π0 A X) → (a : Tmz A) → Tmz (X a)
+  lam-app : app0z (lam0z f) a ≡ f a
+  app-lam : lam0z (app0z a) ≡ a
+
+  lam0 : ((a : Tmz A) → Tm (X a) (f a)) → Tm (Π0 A X) (lam0z f)
+  app0 : Tm (Π0 A X) b → (a : Tmz A) → Tm (X a) (app0z b a)
+
+  Π : (A : Ty) → (∀ {a} → Tm A a → Ty) → Ty
+  lamz : (∀ {a} (a' : Tm A a) → Tmz (X' a')) → Tmz (Π A X')
+  appz : Tmz (Π A X') → (a : Tmz A) → Tmz (X {!   !})
   
 -- ↑ : ∀ {M : Set} → (Tm z A → M) → (Tm j A → M) 
 -- ↑ x t = x [ t ]'
   
-postulate
-  lam : ((a : Tm j A) → Tm i (X (↑ a))) → Tm i (Π j A X)
-  app : Tm i (Π j A X) → (a : Tm (i * j) A) → Tm i (X (↑ a))
-  lam-app : app {i = z} (lam f) a ≡ f a
+  -- lam : ((a : Tm j A) → Tm i (X (↑ a))) → Tm i (Π j A X)
+  -- app : Tm i (Π j A X) → (a : Tm (i * j) A) → Tm i (X (↑ a))
+  -- lam-app : app {i = z} (lam f) a ≡ f a
 
   -- ∣lam∣ : ∀ {A} {X} {f : (a : Tm ω A) → Tm ω (↑ X a)}
   --   → ∣ lam {X = X} f ∣ ≡ lm (λ x → ∣ f (un∣ x ∣) ∣)
@@ -137,9 +131,8 @@ postulate
 --       {k : {n : ●# Tm Nat} → ●# Tm (Fin n)}
 --     → $∣ fin-ind P fz fs k ∣ ≡ nat-rec $∣ fz ∣ {!   !} {!   !}
 
--- --  {{_ : $}}  
+-- --  {{∅ : $}}  
 
 --   -- unspec : (t : Tm# A) → Tm (Spec A t)
 
 --   -- Spec : (A : # → Ty) → Tm# → Prop
-
