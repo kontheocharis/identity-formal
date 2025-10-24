@@ -122,6 +122,7 @@ syntax Π j A (λ z → X) = Π j [ z ∈ A ] X
 
 lamID : (f : (a : Tm ω A) → Tm i (X (↑ a)))
   → ((a : M$ Tm ω A) → ∣ f a ∣ ≡ ∣ a ∣)
+      -- ^^ the rec eta rule won't work with this!
   → Tm i (ΠID A X)
 lamID f p = lam (λ a → spec (f a) (p a))
 

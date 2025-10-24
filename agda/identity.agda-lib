@@ -1,5 +1,5 @@
 name: identity-formal
-depend: standard-library
+depend: standard-library cubical
 include: .
 flags:
   --rewriting
