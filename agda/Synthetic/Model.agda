@@ -110,7 +110,7 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   [[ ε ]] = ε
   [[_]] (_,_ {Δ = Δ} a γ) = [ a ] , [[ γ ]]
   
-  record OpTT-ctors : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm ⊔ ℓ)) where
+  record OpTT-ctors : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)) where
     field
       -- Conversion between Tm and Ex
       ∣_∣ : ((p : $) → Tm i (A~ p)) → Ex
@@ -212,4 +212,19 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
       [succ] : [ succ {ω} t ] ≡ succ [ t ]
       [elim-Nat] : ∀ {mz ms n}
         → [ elim-Nat {ω} X mz ms n ] ≡ (elim-Nat {z} X [ mz ] (bind (λ δ' → [ ms δ' ])) [ n ])
+
+      -- Classifying numeric expressions
+      Num : Tm z * → Ty
+      nat-num : (t : Tm ω Nat) → Tm z (Num ⌜ ∣ (λ p → t) ∣ ⌝)
+        
+      -- Computation for rec
+      rec-η-1 : Tm z (Num t) → rec ze (λ m pm → su m) ⌞ t ⌟ ≡ ⌞ t ⌟
+      rec-η-2 : Tm z (Num t) → rec ze (λ m pm → su pm) ⌞ t ⌟ ≡ ⌞ t ⌟
               
+record OpTT {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)) where
+  field
+    sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}
+  open OpTT-sorts sorts public
+  field
+    ctors : OpTT-ctors sorts
+  open OpTT-ctors ctors public
