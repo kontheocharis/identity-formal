@@ -54,6 +54,7 @@ record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)
     Tm : Mode → Ty → Type ℓtm
     Ex : Type ℓtm
     
+    [_] : ∀ {i A} → Tm i A → Tm z A
     
 module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   open OpTT-sorts sorts
@@ -74,7 +75,23 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   coe : A ≡ B → Tm i A → Tm i B
   coe {i = i} p a = transport ((λ k → Tm i (p k))) a
   
+  -- Telescopes
+  data Tel : Set (ℓtm ⊔ ℓty)
+  data Tms : Tel → Set (ℓtm ⊔ ℓty)
 
+  variable
+    Γ : Tel
+    Δ : Tm _ _ → Tel
+    γ δ : Tms _
+
+  data Tel where
+    ∙ : Tel
+    _,[_]_ : (A : Ty) → Mode → (Tm z A → Tel) → Tel
+
+  data Tms where
+    ε : Tms ∙
+    _,_ : (a : Tm j A) → Tms (Δ [ a ]) → Tms (A ,[ j ] Δ)
+  
   record OpTT-ctors : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm ⊔ ℓ)) where
     field
       -- Conversion between Tm and Ex
@@ -87,13 +104,13 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
     A~ ∋⟨ e ⟩ p = ⟨_⟩ {A~ = A~} e p
       
     field
-      
       -- Irrelevant terms are ∅
       ∅ : Ex
       ∣z∣ : {t~ : $ → Tm z A} → ∣ t~ ∣ ≡ ∅
+      
+      -- Irrelevant modality
+      Irr : Set ℓ → Set ℓ
 
-      -- Conversion from Tm i to Tm z
-      [_] : Tm i A → Tm z A
       -- identity when i = z
       [z] : (a : Tm z A) → [ a ] ≡ a
       
@@ -101,6 +118,13 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
     coe[] X {t} = coe λ k → X ([z] t k)
       
     field
+      -- We can use an irrelevant term to bind a relevant argument
+      -- as long as we eliminate to an irrelevant term
+      bind : ∀ {A} X → (a : Tm z A) → ((x : Tm ω A) → Tm z (X [ x ])) → Tm z (X a)
+      bind[] : ∀ {A} {X : Tm z A → Ty} {a : Tm z A} {f} {t} → bind {A} X [ t ] f ≡ f t 
+
+      -- bind2 : ∀ {A} X → (a : Tm z A) → ((x : Tm ω A) → Tm z (X [ x ])) → Tm z (X a)
+      -- bind2[] : ∀ {A} {X : Tm z A → Ty} {a : Tm z A} {f} {t} → bind {A} X [ t ] f ≡ f t 
 
       -- -- Ex primitives
       -- lm : (Ex → Ex) → Ex
@@ -157,14 +181,18 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
       Nat : Ty
       zero : Tm i Nat
       succ : Tm i Nat → Tm i Nat
-      elim-Nat : (X : Tm z Nat → Ty)
-        → (Tm i (X [ zero {i} ]))
-        → ((n : Tm i Nat) → Tm i (X [ n ]) → Tm i (X [ succ n ]))
-        → (n : Tm i Nat) → Tm i (X [ n ])
+      elim-Nat-ω : (X : Tm z Nat → Ty)
+        → (Tm ω (X [ zero {ω} ]))
+        → ((n : Tm ω Nat) → Tm ω (X [ n ]) → Tm ω (X [ succ n ]))
+        → (n : Tm ω Nat) → Tm ω (X [ n ])
+      elim-Nat-z : (X : Tm z Nat → Ty)
+        → (Tm z (X zero))
+        → ((n : Tm z Nat) → Tm z (X n) → Tm z (X (succ n)))
+        → (n : Tm z Nat) → Tm z (X n)
       elim-Nat-zero-z : ∀ {mz ms}
-        → elim-Nat {i = z} X mz ms zero ≡ mz
+        → elim-Nat-z X mz ms zero ≡ mz
       elim-Nat-succ-z : ∀ {mz ms n}
-        → elim-Nat {i = z} X mz ms (succ n) ≡ ms n (elim-Nat {i = z} X mz ms n)
+        → elim-Nat-z X mz ms (succ n) ≡ ms n (elim-Nat-z X mz ms n)
 
       -- ∣zero∣ : ∣ (λ p → zero {ω}) ∣ ≡ ze
       -- ∣succ∣ : ∣ (λ p → succ {ω} (t~ p)) ∣ ≡ su (∣ t~ ∣)
@@ -183,9 +211,16 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
               
       [zero] : [ zero {ω} ] ≡ zero
       [succ] : [ succ {ω} t ] ≡ succ [ t ]
-      [elim-Nat] : ∀ {mz ms n}
-        → [ elim-Nat {ω} X mz ms n ]
-            ≡ coe {!   !}
-              (elim-Nat {z} X (coe (λ k → X ([z] ([zero] k) (~ k))) [ mz ])
-              (λ n mn → coe {!   !} [ ms {!   !} {!   !} ])
-              {!   !})
+      -- [elim-Nat] : ∀ {mz ms n}
+      --   → [ elim-Nat-ω X mz ms n ]
+      --       ≡ (elim-Nat-z X
+      --           (coe (λ k → X ([zero] k)) [ mz ])
+      --           (λ n mn → 
+      --             bind (λ _ → X (succ n)) mn
+      --               (λ mn' → coe {!   !} [ ms {!   !} {!   !} ])
+      --             )
+      --             -- (bind (λ n → X (succ n)) n
+      --             -- (λ n' → bind (λ _ → X (succ [ n' ])) mn
+      --             -- (λ mn' → coe (λ k → X ([succ] k)) [ {!   !} ]))))
+      --           [ n ])
+              
