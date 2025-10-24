@@ -1,4 +1,4 @@
-{-# OPTIONS --prop --cubical #-}
+{-# OPTIONS --prop --cubical -WnoUnsupportedIndexedMatch #-}
 module Synthetic.Model where
 
 open import Agda.Primitive
@@ -55,15 +55,14 @@ record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)
     Ex : Type ℓtm
     
     -- Map to irrelevant
-    [_] : ∀ {i A} → Tm i A → Tm z A
-    -- identity when i = z
-    [z] : ∀ {A} → (a : Tm z A) → [ a ] ≡ a
+    [_]' : ∀ {A} → Tm ω A → Tm z A
+    
+  [_] : ∀ {i A} → Tm i A → Tm z A
+  [_] {z} = λ x → x
+  [_] {ω} = [_]'
     
   coe : ∀ {A B} → A ≡ B → Tm i A → Tm i B
   coe {i = i} p a = transport ((λ k → Tm i (p k))) a
-    
-  coe[] : ∀ {A} (X : Tm z A → Ty) {t} → Tm i (X [ t ]) → Tm i (X t)
-  coe[] X {t} = coe λ k → X ([z] t k)
     
 module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   open OpTT-sorts sorts
@@ -82,8 +81,8 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
     eq~ : (p : $) → _ ≡ _
   
   -- Telescopes
-  data Tel : Set (ℓtm ⊔ ℓty)
-  data Tms : Mode → Tel → Set (ℓtm ⊔ ℓty)
+  data Tel : Type (ℓtm ⊔ ℓty)
+  data Tms : Mode → Tel → Type (ℓtm ⊔ ℓty)
 
   variable
     Γ Γ' : Tel
@@ -94,21 +93,22 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
 
   data Tel where
     ∙ : Tel
-    _,[_]_ : (A : Ty) → Mode → (Tm z A → Tel) → Tel
+    _at_,_ : (A : Ty) → Mode → (Tm z A → Tel) → Tel
 
   data Tms where
     ε : Tms i ∙
-    _,_ : (a : Tm (i * j) A) → Tms i (Δ [ a ]) → Tms i (A ,[ j ] Δ)
+    _,_ : (a : Tm (i * j) A) → Tms i (Δ [ a ]) → Tms i (A at j , Δ)
+    
+  first : Tms i (A at j , Δ) → Tm (i * j) A
+  first (a , γ) = a
     
   coes : Γ ≡ Γ' → Tms i Γ → Tms i Γ'
   coes {i = i} p γ = transport (λ k → Tms i (p k)) γ
-  
-  coes[] : ∀ (Δ : Tm z A → Tel) {t} → (γ : Tms i (Δ [ t ])) → Tms i (Δ t)
-  coes[] Δ {t} = coes (λ k → Δ ([z] t k))
     
   [[_]] : Tms i Γ → Tms z Γ
+  [[_]] {i = z} γ = γ
   [[ ε ]] = ε
-  [[_]] (_,_ {Δ = Δ} a γ) = [ a ] , coes (λ k → Δ ([z] [ a ] (~ k))) [[ γ ]]
+  [[_]] (_,_ {Δ = Δ} a γ) = [ a ] , [[ γ ]]
   
   record OpTT-ctors : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm ⊔ ℓ)) where
     field
@@ -126,113 +126,90 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
       ∅ : Ex
       ∣z∣ : {t~ : $ → Tm z A} → ∣ t~ ∣ ≡ ∅
       
-      -- Irrelevant modality
-      Irr : Set ℓ → Set ℓ
-      
-    field
       -- We can use an irrelevant term to bind a relevant argument
       -- as long as we eliminate to an irrelevant term
-      bind : (a : Tms z Γ) → ((δ : Tms ω Γ) → Tm z (X' [[ δ ]])) → Tm z (X' [[ δ ]])
-      bind[] : bind {Γ} {X'} [[ δ ]] f' ≡ f' δ
+      bind : ((δ : Tms ω Γ) → Tm z (X' [[ δ ]])) → (γ : Tms z Γ) → Tm z (X' γ)
+      bind[]-1 : bind {Γ} {X'} f' [[ γ ]] ≡ f' γ
+      bind[]-2 : bind {Γ} {X'} (λ δ → f' [[ δ ]]) ≡ f'
 
-      -- bind2 : ∀ {A} X → (a : Tm z A) → ((x : Tm ω A) → Tm z (X [ x ])) → Tm z (X a)
-      -- bind2[] : ∀ {A} {X : Tm z A → Ty} {a : Tm z A} {f} {t} → bind {A} X [ t ] f ≡ f t 
-
-      -- -- Ex primitives
-      -- lm : (Ex → Ex) → Ex
-      -- ap : Ex → Ex → Ex
+      -- Ex primitives
+      lm : (Ex → Ex) → Ex
+      ap : Ex → Ex → Ex
       ze : Ex
       su : Ex → Ex
       rec : Ex → (Ex → Ex → Ex) → Ex → Ex
 
-      -- -- Pi types
-      -- Π : (j : Mode) → (A : Ty) → (Tm z A → Ty) → Ty
-      -- lam : ((a : Tm j A) → Tm i (X [ a ])) → Tm i (Π j A X)
-      -- app : Tm i (Π j A X) → (a : Tm (i * j) A) → Tm i (X [ a ])
-      -- -- Beta rules for irrelevant fragment
-      -- lam-app-z : lam {i = z} (app t) ≡ t
-      -- app-lam-z : app {i = z} (lam f) t ≡ f t
-      -- -- Computation rules for ∣_∣
-      -- ∣lam-ω∣ :
-      --   ∣ (λ p → lam {ω} {A~ p} {ω} {X~ p} (f~ p)) ∣
-      --     ≡ lm (λ x → ∣ (λ p → f~ p (A~ ∋⟨ x ⟩ p)) ∣)
-      -- ∣app-ω∣ :
-      --   ∣ (λ p → app {ω} {ω} {A~ p} {X~ p} (t~ p) (u~ p)) ∣
-      --     ≡ ap ∣ t~ ∣ ∣ u~ ∣
-      -- ∣lam-z∣ :
-      --   ∣ (λ p → lam {z} {A~ p} {ω} {X~ p} (f~ p)) ∣
-      --     ≡ ∣ (λ p → f~ p (A~ ∋⟨ ∅ ⟩ p)) ∣
-      -- ∣app-z∣ :
-      --   ∣ (λ p → app {ω} {z} {A~ p} {X~ p} (t~ p) (u~ p)) ∣
-      --     ≡ ∣ t~ ∣
-      -- [lam] : [ lam f ] ≡ lam (λ a → [ f a ])
-      -- [app] : {t : Tm ω (Π j A X)} {u : Tm (j * ω) A} →
-      --   [ app {ω} {j} {A} {X} t u ] ≡ coe[] X (app [ t ] [ u ])
+      -- Pi types
+      Π : (j : Mode) → (A : Ty) → (Tm z A → Ty) → Ty
+      lam : ((a : Tm j A) → Tm i (X [ a ])) → Tm i (Π j A X)
+      app : Tm i (Π j A X) → (a : Tm (i * j) A) → Tm i (X [ a ])
+      -- Beta rules for irrelevant fragment
+      lam-app-z : lam {i = z} (app t) ≡ t
+      app-lam-z : app {i = z} (lam f) t ≡ f t
+      -- Computation rules for ∣_∣
+      ∣lam-ω∣ :
+        ∣ (λ p → lam {ω} {A~ p} {ω} {X~ p} (f~ p)) ∣
+          ≡ lm (λ x → ∣ (λ p → f~ p (A~ ∋⟨ x ⟩ p)) ∣)
+      ∣app-ω∣ :
+        ∣ (λ p → app {ω} {ω} {A~ p} {X~ p} (t~ p) (u~ p)) ∣
+          ≡ ap ∣ t~ ∣ ∣ u~ ∣
+      ∣lam-z∣ :
+        ∣ (λ p → lam {z} {A~ p} {ω} {X~ p} (f~ p)) ∣
+          ≡ ∣ (λ p → f~ p (A~ ∋⟨ ∅ ⟩ p)) ∣
+      ∣app-z∣ :
+        ∣ (λ p → app {ω} {z} {A~ p} {X~ p} (t~ p) (u~ p)) ∣
+          ≡ ∣ t~ ∣
+      [lam] : [ lam f ] ≡ lam (λ a → [ f a ])
+      [app] : {t : Tm ω (Π j A X)} {u : Tm (j * ω) A}
+        → [ app {ω} {j} {A} {X} t u ] ≡ app [ t ] [ u ]
         
-      -- -- Internalised Ex (only in z)
-      -- * : Ty
-      -- ⌜_⌝ : Ex → Tm z *
-      -- ⌞_⌟ : Tm z * → Ex
-      -- ⌞⌟-⌜⌝ : ⌞ ⌜ e ⌝ ⌟ ≡ e
-      -- ⌜⌝-⌞⌟ : ⌜ ⌞ t ⌟ ⌝ ≡ t
+      -- Internalised Ex (only in z)
+      * : Ty
+      ⌜_⌝ : Ex → Tm z *
+      ⌞_⌟ : Tm z * → Ex
+      ⌞⌟-⌜⌝ : ⌞ ⌜ e ⌝ ⌟ ≡ e
+      ⌜⌝-⌞⌟ : ⌜ ⌞ t ⌟ ⌝ ≡ t
         
-      -- -- Spec types
-      -- Spec : (A : Ty) → Tm z * → Ty
-      -- specz : (t : Tm z A) → Tm z (Spec A u)
-      -- spec : (t : Tm ω A) → ⌜ ∣ (λ p → t) ∣ ⌝ ≡ u → Tm ω (Spec A u)
-      -- unspec : Tm i (Spec A u) → Tm i A
-      -- ∣spec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (A~ p)}
-      --   {eq~ : (p : $) → ⌜ ∣ (λ p' → (t~ p)) ∣ ⌝ ≡ u~ p}
-      --     → ∣ (λ p → spec (t~ p) (eq~ p)) ∣ ≡ ∣ t~ ∣
-      -- ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm i (Spec (A~ p) u)}
-      --     → ∣ (λ p → unspec (t~ p)) ∣ ≡ ⌞ u ⌟
-      -- [spec] : [ spec t eq ] ≡ specz [ t ]
-      -- [unspec] : [ unspec t ] ≡ unspec [ t ]
+      -- Spec types
+      Spec : (A : Ty) → Tm z * → Ty
+      specz : (t : Tm z A) → Tm z (Spec A u)
+      spec : (t : Tm ω A) → ⌜ ∣ (λ p → t) ∣ ⌝ ≡ u → Tm ω (Spec A u)
+      unspec : Tm i (Spec A u) → Tm i A
+      ∣spec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (A~ p)}
+        {eq~ : (p : $) → ⌜ ∣ (λ p' → (t~ p)) ∣ ⌝ ≡ u~ p}
+          → ∣ (λ p → spec (t~ p) (eq~ p)) ∣ ≡ ∣ t~ ∣
+      ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm i (Spec (A~ p) u)}
+          → ∣ (λ p → unspec (t~ p)) ∣ ≡ ⌞ u ⌟
+      [spec] : [ spec t eq ] ≡ specz [ t ]
+      [unspec] : [ unspec t ] ≡ unspec [ t ]
       
       -- Natural numbers
       Nat : Ty
       zero : Tm i Nat
       succ : Tm i Nat → Tm i Nat
-      elim-Nat-ω : (X : Tm z Nat → Ty)
-        → (Tm ω (X [ zero {ω} ]))
-        → ((n : Tm ω Nat) → Tm ω (X [ n ]) → Tm ω (X [ succ n ]))
-        → (n : Tm ω Nat) → Tm ω (X [ n ])
-      elim-Nat-z : (X : Tm z Nat → Ty)
-        → (Tm z (X zero))
-        → ((n : Tm z Nat) → Tm z (X n) → Tm z (X (succ n)))
-        → (n : Tm z Nat) → Tm z (X n)
+      elim-Nat : (X : Tm z Nat → Ty)
+        → (Tm i (X zero))
+        → ((δ : Tms i (Nat at ω , λ n → X [ n ] at ω , λ _ → ∙)) → Tm i (X (succ (first [[ δ ]]))))
+        → (n : Tm i Nat) → Tm i (X [ n ])
       elim-Nat-zero-z : ∀ {mz ms}
-        → elim-Nat-z X mz ms zero ≡ mz
+        → elim-Nat {z} X mz ms zero ≡ mz
       elim-Nat-succ-z : ∀ {mz ms n}
-        → elim-Nat-z X mz ms (succ n) ≡ ms n (elim-Nat-z X mz ms n)
+        → elim-Nat {z} X mz ms (succ n) ≡ ms (n , elim-Nat {z} X mz ms n , ε)
 
-      -- ∣zero∣ : ∣ (λ p → zero {ω}) ∣ ≡ ze
-      -- ∣succ∣ : ∣ (λ p → succ {ω} (t~ p)) ∣ ≡ su (∣ t~ ∣)
-      -- ∣elim-Nat-ω∣ : ∀ {X~ : (p : $) → Tm z Nat → Ty}
-      --   → {mz~ : (p : $) → Tm ω (X~ p [ zero {ω} ])}
-      --   → {ms~ : (p : $) → (n : Tm ω Nat) → Tm ω (X~ p [ n ]) → Tm ω (X~ p [ succ n ])}
-      --   → {n~ : (p : $) → Tm ω Nat}
-      --   → ∣ (λ p → elim-Nat (X~ p) (mz~ p) (ms~ p) (n~ p)) ∣
-      --       ≡ rec
-      --         (∣ mz~ ∣)
-      --         (λ a b →
-      --           ∣ (λ p → ms~ p
-      --             ((λ _ → Nat) ∋⟨ a ⟩ p)
-      --             ((λ p → X~ p [ (λ _ → Nat) ∋⟨ a ⟩ p ]) ∋⟨ b ⟩ p)) ∣)
-      --         (∣ n~ ∣)
+      ∣zero∣ : ∣ (λ p → zero {ω}) ∣ ≡ ze
+      ∣succ∣ : ∣ (λ p → succ {ω} (t~ p)) ∣ ≡ su (∣ t~ ∣)
+      ∣elim-Nat-ω∣ : ∀ {X~ : (p : $) → Tm z Nat → Ty}
+        → {mz~ : (p : $) → Tm ω (X~ p zero)}
+        → {ms~ : (p : $) → (δ : Tms ω (Nat at ω , λ n → X~ p [ n ] at ω , λ _ → ∙)) → Tm ω (X~ p (succ (first [[ δ ]])))}
+        → {n~ : (p : $) → Tm ω Nat}
+        → ∣ (λ p → elim-Nat (X~ p) (mz~ p) (ms~ p) (n~ p)) ∣
+            ≡ rec
+              (∣ mz~ ∣)
+              (λ x px → ∣ (λ p → ms~ p ((_ ∋⟨ x ⟩ p) , (((λ p → X~ p [ _ ∋⟨ x ⟩ p ]') ∋⟨ px ⟩ p)) , ε)) ∣)
+              (∣ n~ ∣)
               
       [zero] : [ zero {ω} ] ≡ zero
       [succ] : [ succ {ω} t ] ≡ succ [ t ]
       [elim-Nat] : ∀ {mz ms n}
-        → [ elim-Nat-ω X mz ms n ]
-            ≡ (elim-Nat-z X
-                (coe (λ k → X ([zero] k)) [ mz ])
-                (λ n mn →  ?)
-                  -- bind (λ _ → X (succ n)) mn
-                  --   (λ mn' → coe {!   !} [ ms {!   !} {!   !} ])
-                  -- )
-                  -- (bind (λ n → X (succ n)) n
-                  -- (λ n' → bind (λ _ → X (succ [ n' ])) mn
-                  -- (λ mn' → coe (λ k → X ([succ] k)) [ {!   !} ]))))
-                [ n ])
+        → [ elim-Nat {ω} X mz ms n ] ≡ (elim-Nat {z} X [ mz ] (bind (λ δ' → [ ms δ' ])) [ n ])
               
