@@ -12,36 +12,14 @@ open import Synthetic.Model
   
 {-# BUILTIN REWRITE _≡_ #-}
 
--- We will define semantics for the synthetic model by working in a glued topos.
--- This can be emulated in Agda by postulates.
+-- We will define semantics for the synthetic model by working in the glued
+-- topos Set ↓ Γ. This can be emulated in Agda by postulates.
 
 -- In particular, let Λ be the syntactic (initial) uni-typed CwF of lambda
 -- calculus terms quotiented by βη. Its objects are natural numbers. We have the
 -- presheaf category Psh(Λ) which is a topos, and contains a second-order model
--- of Λ which is the syntax.
-
--- At the same time, there is the category of Λ-sets (Λ-Set). This is the
--- category of assemblies over the PCA defined by closed Λ terms. It can be
--- extended to the realizability topos RT(Λ).
-
--- Our first goal is to find a functor G : Psh(Λ) → RT(Λ) to glue along.
---
--- In fact, it suffices to find a functor g : Λ → Λ-Set, which we can extend to
--- G = i ∘ g! by universal property of Psh(Λ) and inclusion i : Λ-Set → RT(Λ).
---
--- To do this, we map each object n of Λ to the assembly g(n) whose underlying
--- set is the n-fold product of closed Λ terms, and whose n-fold realizability
--- relation is given by the identity. For a morphism f : n → m in Λ, which is m
--- lambda terms with n free variables each, we define g(f) to be the function
--- which maps a tuple of n closed terms to the tuple of m closed terms given by
--- n-currying f pointwise, tracked by f itself. Compositions and identities are
--- respected. Additionally, finite limits are preserved.
-
--- Once we do all this, we are awarded with a second-order model of Λ in
--- RT(Λ). (?)
-
--- Therefore, the gluing category is RT(Λ) ↓ G, which is again a topos.
--- We can use this as a semantics for code extraction.
+-- of Λ which is the syntax. We can glue along the global sections functor Γ :
+-- Psh(Λ) → Set to get a new topos Set ↓ Γ.
 
 postulate
   Ψ : Prop
