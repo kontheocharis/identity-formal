@@ -33,6 +33,8 @@ record _true (P : Prop) : Type where
   field
     fact : P
 
+open _true
+
 Ψ⇒_ : Type ℓ → Type ℓ
 Ψ⇒_ M = (p : Ψ) → M
 
@@ -54,6 +56,11 @@ record Ψ*-Modal (M : Type ℓ) : Type ℓ where
   no-eta-equality
   field
     prf : isEquiv {A = Ψ true × M} {B = Ψ true} (λ (p , _) → p)
+
+  collapses : Ψ → isContr M
+  collapses p = invIsEq prf [ p ] .snd ,  λ m →  λ i → retIsEq prf ([ p ] , m) i .snd
+
+open Ψ*-Modal
 
 record Ψ⇒-Modal (M : Type ℓ) : Type ℓ where
   no-eta-equality
@@ -129,14 +136,29 @@ open OpTT
 open OpTT-sorts
 open OpTT-ctors
 
+record Tyᴿ : Type1 where
+  field
+    irr : Type
+    irr-modal : Ψ*-Modal irr
+    rel : irr → [ Type ∣ Ψ ↪ TmΛ ]
+
+  bundle-collapses : (p : Ψ) → (Σ[ t ∈ irr ] rel t .fst) ≡ TmΛ p
+  bundle-collapses p =
+    let k = isoToPath (Σ-contractFstIso (collapses irr-modal p))
+    in  _∙_ k (rel (collapses irr-modal p .fst) .snd p) 
+
+  rel-total : [ Type ∣ Ψ ↪ TmΛ ]
+  rel-total =  ( Σ[ t ∈ irr ] rel t .fst) , bundle-collapses
+
+open Tyᴿ
 
 ms : OpTT-sorts {lzero} {lsuc lzero} {lzero}
 ms .$ = Ψ
-ms .Ty = [ Type ∣ Ψ ↪ TmΛ ]
-ms .Tm z A = Ψ* A .fst
-ms .Tm ω A = A .fst
+ms .Ty = Tyᴿ
+ms .Tm z A = A .irr
+ms .Tm ω A = rel-total A .fst
 ms .Ex = Ψ⇒ᴰ TmΛ
-[ ms ]' = η
+[ ms ]' {A} x = x .fst
 
 id : Ψ⇒ᴰ TmΛ
 id p = lambda p (λ x → x)
@@ -148,40 +170,45 @@ _>>=_ {B = B} (trivial p {x = x} i) f = *-collapses {M = B} p (f x) i
 
 
 mc : OpTT-ctors ms
-∣ mc ∣ {A~ = A~} x p = give' p TmΛ (A~ p) (x p)
-⟨ mc ⟩ {z} x p = nope p
-⟨ mc ⟩ {ω} {A~} x p = give p TmΛ (A~ p) (x p)
-mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p TmΛ (A~ p) (e p) j
-mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p TmΛ (A~ p) (t~ p) j
-mc .[⟨⟩] {p = p} = sym (trivial p)
-mc .∅ = id
-mc .bind x ε = x ε
-mc .bind x (nope p , γ) = nope p
-mc .bind x (η x₁ , γ) = {!   !}
-mc .bind x (trivial p i , γ) = {!   !}
-mc .bind[]-1 = {!   !}
-mc .bind[]-2 = {!   !}
-mc .lm f p = lambda p (λ q → f (λ _ → q) p)
-mc .ap x y p = apply p (x p) (y p)
-mc .ze = zeroΛ
-mc .su x p = succΛ p (x p)
--- mc .rec = {!   !}
-mc .Π z A X
-  = G[ f ∈ TmΛ ]
-      [ ((a : Ψ* A .fst) → X a .fst)
-        ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X a) (f p)) ] , {!   !}
-mc .Π ω A X
-  = G[ f ∈ TmΛ ]
-      [ ((a : A .fst) → X (η a) .fst)
-        ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X (η a)) (apply p (f p) (give' p TmΛ A a))) ] , {!   !}
-mc .lam {z} {i = z} f = do
+∣ mc ∣ {A~ = A~} x p = give' p TmΛ (rel-total (A~ p)) (x p)
+-- ⟨ mc ⟩ {z} x p = nope p
+-- ⟨ mc ⟩ {ω} {A~} x p = give p TmΛ (A~ p .rel) (x p)
+-- mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p TmΛ (A~ p .rel) (e p) j
+-- mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p TmΛ (A~ p .rel) (t~ p) j
+-- mc .[⟨⟩] {p = p} = sym (trivial p)
+-- mc .∅ = id
+-- mc .bind x ε = x ε
+-- mc .bind x (nope p , γ) = nope p
+-- mc .bind x (η x₁ , γ) = {!   !}
+-- mc .bind x (trivial p i , γ) = {!   !}
+-- mc .bind[]-1 = {!   !}
+-- mc .bind[]-2 = {!   !}
+-- mc .lm f p = lambda p (λ q → f (λ _ → q) p)
+-- mc .ap x y p = apply p (x p) (y p)
+-- mc .ze = zeroΛ
+-- mc .su x p = succΛ p (x p)
+-- -- -- mc .rec = {!   !}
+-- mc .Π z A X .irr = (a : A .irr) → X (η a) .irr
+-- mc .Π z A X .rel = G[ f ∈ TmΛ ]
+--       [ ((a : Ψ* A .irr) → X a .rel .fst)
+--         ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X a .rel) (f p)) ] , {!   !}
+-- mc .Π z A X .erase (_ , f , _) a = X (η a) .erase (f (η a))
+-- mc .Π ω A X .irr =  (a : A .irr) → X (η a) .irr
+-- mc .Π ω A X .rel = G[ f ∈ TmΛ ]
+--       [ ((a : A .rel .fst) → X (η (A .erase a)) .rel .fst)
+--         ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X (η (A .erase a)) .rel) (apply p (f p) (give' p TmΛ (A .rel) a))) ] , {!   !}
+-- mc .Π ω A X .erase (_ , f , _) a = {!!}
+--   = G[ f ∈ TmΛ ]
+--       [ ((a : A .fst) → X (η a) .fst)
+--         ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X (η a)) (apply p (f p) (give' p TmΛ A a))) ] , {!   !}
+-- mc .lam {z} {i = z} f = do
   
-  {!!}
-mc .lam {ω} {i = z} f = {!!}
-mc .lam {z} {i = ω} {X} f
-  = (λ p → give' p TmΛ (X _) (f (nope p))) ,
-    f , λ p q → {!!}
-mc .lam {ω} {i = ω} f = {!   !}
+--    η ({!!} , {!!})
+-- mc .lam {ω} {i = z} f = {!!}
+-- mc .lam {z} {i = ω} {X} f
+--   = (λ p → give' p TmΛ (X _) (f (nope p))) ,
+--     f , λ p q → {!!}
+-- mc .lam {ω} {i = ω} f = {!   !}
 -- mc .app = {!   !}
 -- mc .lam-app-z = {!   !}
 -- mc .app-lam-z = {!   !}

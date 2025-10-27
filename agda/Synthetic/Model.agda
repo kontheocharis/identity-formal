@@ -63,7 +63,7 @@ record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)
 
   coe : ∀ {A B} → A ≡ B → Tm i A → Tm i B
   coe {i = i} p a = transport ((λ k → Tm i (p k))) a
-
+    
 module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   open OpTT-sorts sorts
   
