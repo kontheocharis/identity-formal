@@ -53,17 +53,17 @@ record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)
     Ty : Type ℓty
     Tm : Mode → Ty → Type ℓtm
     Ex : Type ℓtm
-    
+
     -- Map to irrelevant
     [_]' : ∀ {A} → Tm ω A → Tm z A
-    
+
   [_] : ∀ {i A} → Tm i A → Tm z A
   [_] {z} = λ x → x
   [_] {ω} = [_]'
-    
+
   coe : ∀ {A B} → A ≡ B → Tm i A → Tm i B
   coe {i = i} p a = transport ((λ k → Tm i (p k))) a
-    
+
 module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   open OpTT-sorts sorts
   
@@ -79,6 +79,7 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
     e s w : Ex
     eq : _ ≡ _
     eq~ : (p : $) → _ ≡ _
+    p q r : $
   
   -- Telescopes
   data Tel : Type (ℓtm ⊔ ℓty)
@@ -113,10 +114,10 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   record OpTT-ctors : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)) where
     field
       -- Conversion between Tm and Ex
-      ∣_∣ : ((p : $) → Tm i (A~ p)) → Ex
+      ∣_∣ : ((p : $) → Tm ω (A~ p)) → Ex
       ⟨_⟩ : Ex → ((p : $) → Tm i (A~ p))
-      ∣⟨⟩∣ : ∣_∣ {i} {A~} (⟨ e ⟩) ≡ e
-      ⟨∣∣⟩ : ⟨ ∣ t~ ∣ ⟩ ≡ t~
+      ∣⟨⟩∣ : ∣_∣ {A~} (⟨ e ⟩) ≡ e
+      ⟨∣∣⟩ : {t~ : (p : $) → Tm ω (A~ p)} → ⟨ ∣ t~ ∣ ⟩ ≡ t~
       
     _∋⟨_⟩_ : (A~ : $ → Ty) → Ex → ((p : $) → Tm i (A~ p))
     A~ ∋⟨ e ⟩ p = ⟨_⟩ {A~ = A~} e p
@@ -124,7 +125,7 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
     field
       -- Irrelevant terms are ∅
       ∅ : Ex
-      ∣z∣ : {t~ : $ → Tm z A} → ∣ t~ ∣ ≡ ∅
+      [⟨⟩] : [ A~ ∋⟨ e ⟩ p ]' ≡ A~ ∋⟨ e ⟩ p 
       
       -- We can use an irrelevant term to bind a relevant argument
       -- as long as we eliminate to an irrelevant term
@@ -178,7 +179,7 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
       ∣spec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (A~ p)}
         {eq~ : (p : $) → ⌜ ∣ (λ p' → (t~ p)) ∣ ⌝ ≡ u~ p}
           → ∣ (λ p → spec (t~ p) (eq~ p)) ∣ ≡ ∣ t~ ∣
-      ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm i (Spec (A~ p) u)}
+      ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (Spec (A~ p) u)}
           → ∣ (λ p → unspec (t~ p)) ∣ ≡ ⌞ u ⌟
       [spec] : [ spec t eq ] ≡ specz [ t ]
       [unspec] : [ unspec t ] ≡ unspec [ t ]
