@@ -7,7 +7,6 @@ open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Transport
 open import Cubical.Data.Sigma
 open import Data.Unit
-open import Data.Empty
 open import Agda.Primitive
 
 open import Synthetic.Model
@@ -258,10 +257,7 @@ mc .∣app-ω∣ = {!   !}
 -- mc .∣app-z∣ = {!   !}
 mc .[lam] = {! refl  !}
 -- mc .[app] = {!   !}
-mc .* .irr = Ψ* (Ψ⇒ᴰ TmΛ)
-mc .* .irr-modal = Ψ*-is-Ψ*-Modal
-mc .* .rel x = ⊥ , {!!}
-mc .* .sec = {! !}
+mc .* = {!   !}
 -- ⌜ mc ⌝ = {!   !}
 -- ⌞ mc ⌟ = {!   !}
 -- mc .⌞⌟-⌜⌝ = {!   !}

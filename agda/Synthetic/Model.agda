@@ -165,22 +165,22 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
         → [ app {ω} {j} {A} {X} t u ] ≡ app [ t ] [ u ]
         
       -- Internalised Ex (only in z)
-      * : Ty
-      ⌜_⌝ : Ex → Tm z *
-      ⌞_⌟ : Tm z * → Ex
-      ⌞⌟-⌜⌝ : ⌞ ⌜ e ⌝ ⌟ ≡ e
-      ⌜⌝-⌞⌟ : ⌜ ⌞ t ⌟ ⌝ ≡ t
+      -- * : Ty
+      -- ⌜_⌝ : Ex → Tm z *
+      -- ⌞_⌟ : Tm z * → Ex
+      -- ⌞⌟-⌜⌝ : ⌞ ⌜ e ⌝ ⌟ ≡ e
+      -- ⌜⌝-⌞⌟ : ⌜ ⌞ t ⌟ ⌝ ≡ t
         
       -- Spec types
-      Spec : (A : Ty) → Tm z * → Ty
-      specz : (t : Tm z A) → Tm z (Spec A u)
-      spec : (t : Tm ω A) → ⌜ ∣ (λ p → t) ∣ ⌝ ≡ u → Tm ω (Spec A u)
-      unspec : Tm i (Spec A u) → Tm i A
+      Spec : (A : Ty) → Ex → Ty
+      specz : (t : Tm z A) → Tm z (Spec A e)
+      spec : (t : Tm ω A) → ∣ (λ p → t) ∣ ≡ e → Tm ω (Spec A e)
+      unspec : Tm i (Spec A e) → Tm i A
       ∣spec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (A~ p)}
-        {eq~ : (p : $) → ⌜ ∣ (λ p' → (t~ p)) ∣ ⌝ ≡ u~ p}
+        {eq~ : (p : $) → ∣ (λ p' → (t~ p)) ∣ ≡ e}
           → ∣ (λ p → spec (t~ p) (eq~ p)) ∣ ≡ ∣ t~ ∣
-      ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (Spec (A~ p) u)}
-          → ∣ (λ p → unspec (t~ p)) ∣ ≡ ⌞ u ⌟
+      ∣unspec∣ : {A~ : $ → Ty} {t~ : (p : $) → Tm ω (Spec (A~ p) e)}
+          → ∣ (λ p → unspec (t~ p)) ∣ ≡ e
       [spec] : [ spec t eq ] ≡ specz [ t ]
       [unspec] : [ unspec t ] ≡ unspec [ t ]
       
@@ -215,12 +215,12 @@ module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
         → [ elim-Nat {ω} X mz ms n ] ≡ (elim-Nat {z} X [ mz ] (bind (λ δ' → [ ms δ' ])) [ n ])
 
       -- Classifying numeric expressions
-      Num : Tm z * → Ty
-      nat-num : (t : Tm ω Nat) → Tm z (Num ⌜ ∣ (λ p → t) ∣ ⌝)
+      Num : Ex → Ty
+      nat-num : (t : Tm ω Nat) → Tm z (Num ∣ (λ p → t) ∣)
         
       -- Computation for rec
-      rec-η-1 : Tm z (Num t) → rec ze (λ m pm → su m) ⌞ t ⌟ ≡ ⌞ t ⌟
-      rec-η-2 : Tm z (Num t) → rec ze (λ m pm → su pm) ⌞ t ⌟ ≡ ⌞ t ⌟
+      rec-η-1 : Tm z (Num e) → rec ze (λ m pm → su m) e ≡ e
+      rec-η-2 : Tm z (Num e) → rec ze (λ m pm → su pm) e ≡ e
               
 record OpTT {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)) where
   field
