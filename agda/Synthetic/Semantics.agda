@@ -111,7 +111,7 @@ syntax G A (λ x → B) = G[ x ∈ A ] B
 
 G-collapses : ∀ (p : Ψ) (A : Ψ⇒ (Type ℓ)) (B : Ψ⇒ᴰ A → Type ℓ)
   {{BΨ* : ∀ {a : Ψ⇒ᴰ A} → Ψ*-Modal (B a)}} → G[ a ∈ A ] B a ≡ A p
-G-collapses A B = {!   !}
+G-collapses p A B = {!   !}
 
 instance
   [_∣Ψ↪_]-is-Ψ*-Modal : {x : Ψ⇒ M} → Ψ*-Modal [ M ∣ Ψ ↪ x ]
@@ -196,31 +196,39 @@ mc .lm f p = lambda p (λ q → f (λ _ → q) p)
 mc .ap x y p = apply p (x p) (y p)
 mc .ze = zeroΛ
 mc .su x p = succΛ p (x p)
--- -- -- mc .rec = {!   !}
+mc .rec = {!   !}
 mc .Π z A X .irr = (a : A .irr) → X a .irr
 mc .Π z A X .rel f = G[ fΛ ∈ TmΛ ]
       [ ((a : A .irr) → X a .rel (f a) .fst)
-        ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X a .rel (f a)) (fΛ p)) ] , {!   !}
-mc .Π z A X .irr-modal .prf .equiv-proof y = {! !}
+        ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X a .rel (f a)) (fΛ p)) ]
+      ,  λ p → G-collapses p _ _
+mc .Π z A X .irr-modal .prf .equiv-proof y = {!  !}
 mc .Π z A X .sec f
-  = (( λ p → 
+  = ((λ p → 
       let a = nope' (A .irr-modal) p in
       give' p TmΛ (X a .rel (f a)) (X a .sec (f a)))
-      , ((λ a → X a .sec (f a)) , λ p → funExt λ a →
-          let a' = nope' (A .irr-modal) p in
-           subst (λ a → X a .sec (f a) ≡ give p TmΛ (X a .rel (f a)) _)
-            (trivial' (A .irr-modal) p {x = a})
-            (sym (give-give' p TmΛ (X a' .rel (f a')) _))))
+    , (λ a → X a .sec (f a)) , λ p → funExt λ a →
+      let a' = nope' (A .irr-modal) p in
+      subst (λ a → X a .sec (f a) ≡ give p TmΛ (X a .rel (f a)) _)
+        (trivial' (A .irr-modal) p {x = a})
+        (sym (give-give' p TmΛ (X a' .rel (f a')) _)))
 mc .Π ω A X .irr =  (a : A .irr) → X a .irr
 mc .Π ω A X .rel f = G[ fΛ ∈ TmΛ ]
-      [ ( ∀ {a : A .irr} (a' : A .rel a .fst) →  X a .rel (f a) .fst)
-        ∣ p ∈ Ψ ↪ (λ {a} a' → give p TmΛ (X a .rel (f a))
-        (apply p (fΛ p) (give' p TmΛ ( A .rel a) a'))) ] , {!   !}
+      [ ( ∀ {a : A .irr} (ar : A .rel a .fst) →  X a .rel (f a) .fst)
+        ∣ p ∈ Ψ ↪ (λ {a} ar → give p TmΛ (X a .rel (f a))
+        (apply p (fΛ p) (give' p TmΛ ( A .rel a) ar))) ]
+      ,  λ p → G-collapses p _ _
+mc .Π ω A X .irr-modal .prf .equiv-proof y = {!  !}
+mc .Π ω A X .sec f
+  = (λ p →
+      let a = nope' (A .irr-modal) p in
+       lambda p (λ x →  give' p TmΛ (X a .rel (f a)) (X a .sec (f a))))
+    ,  (λ {a} ar → X a .sec (f a)) ,  λ p → implicitFunExt λ {a} → funExt λ ar →
+      let a' = nope' (A .irr-modal) p in
+      {! !}
 mc .lam {z} {i = z} f = f
 mc .lam {ω} {A} {i = z} f a = f (a , A .sec a)
--- mc .lam {z} {i = ω} {X} f
---   = (λ p → give' p TmΛ (X _) (f (nope p))) ,
---     f , λ p q → {!!}
+mc .lam {z} {i = ω} {X} f = {!!}
 -- mc .lam {ω} {i = ω} f = {!   !}
 -- mc .app = {!   !}
 -- mc .lam-app-z = {!   !}
