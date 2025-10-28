@@ -96,6 +96,7 @@ give-give' : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : M .fst)
   → give p A M (give' p A M a) ≡ a
 give-give' p A M a = transport⁻Transport (M .snd _) a
 
+
 give'-give : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : A p)
   → give' p A M (give p A M a) ≡ a
 give'-give p A M a = transportTransport⁻ (M .snd _) a
@@ -133,6 +134,9 @@ record Λ : Set (lsuc ℓ) where
   succΛ : TmΛ → TmΛ
   succΛ n = lambda (λ z → lambda (λ s → apply (apply n z) s))
 
+  id : TmΛ
+  id = lambda (λ x → x)
+
 -- We have a Ψ⇒-modal model of Λ in the glued topos.
 postulate
   Λm : Ψ⇒ Λ {ℓ}
@@ -149,6 +153,7 @@ record Tyᴿ : Type1 where
     irr : Type
     irr-modal : Ψ*-Modal irr
     rel : irr → [ Type ∣ Ψ ↪ TmΛ ]
+    sec : (a : irr) → rel a .fst
 
   bundle-collapses : (p : Ψ) → (Σ[ t ∈ irr ] rel t .fst) ≡ TmΛ p
   bundle-collapses p =
@@ -168,13 +173,10 @@ ms .Tm ω A = rel' A .fst
 ms .Ex = Ψ⇒ᴰ TmΛ
 [ ms ]' {A} x = x .fst
 
-id : Ψ⇒ᴰ TmΛ
-id p = lambda p (λ x → x)
-
-_>>=_ : Ψ* A → (A → Ψ* B) → Ψ* B
-nope p >>= f = nope p
-η x >>= f = f x
-_>>=_ {B = B} (trivial p {x = x} i) f = *-collapses {M = B} p (f x) i
+-- _>>=_ : Ψ* A → (A → Ψ* B) → Ψ* B
+-- nope p >>= f = nope p
+-- η x >>= f = f x
+-- _>>=_ {B = B} (trivial p {x = x} i) f = *-collapses {M = B} p (f x) i
 
 mc : OpTT-ctors ms
 ∣ mc ∣ {A~ = A~} x p = give' p TmΛ (rel' (A~ p)) (x p)
@@ -184,7 +186,7 @@ mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p TmΛ (rel' (A~ p)) (e p) j
 mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p TmΛ (rel' (A~ p)) (t~ p) j
 mc .[⟨⟩] {A~} {p = p} = sym (trivial' (A~ p .irr-modal) p) 
 mc .∅ = id
-mc .bind x f = {!!}
+-- mc .bind x ε = x ε
 -- mc .bind x (nope p , γ) = nope p
 -- mc .bind x (η x₁ , γ) = {!   !}
 -- mc .bind x (trivial p i , γ) = {!   !}
@@ -199,13 +201,23 @@ mc .Π z A X .irr = (a : A .irr) → X a .irr
 mc .Π z A X .rel f = G[ fΛ ∈ TmΛ ]
       [ ((a : A .irr) → X a .rel (f a) .fst)
         ∣ p ∈ Ψ ↪ (λ a → give p TmΛ (X a .rel (f a)) (fΛ p)) ] , {!   !}
+mc .Π z A X .irr-modal .prf .equiv-proof y = {! !}
+mc .Π z A X .sec f
+  = (( λ p → 
+      let a = nope' (A .irr-modal) p in
+      give' p TmΛ (X a .rel (f a)) (X a .sec (f a)))
+      , ((λ a → X a .sec (f a)) , λ p → funExt λ a →
+          let a' = nope' (A .irr-modal) p in
+           subst (λ a → X a .sec (f a) ≡ give p TmΛ (X a .rel (f a)) _)
+            (trivial' (A .irr-modal) p {x = a})
+            (sym (give-give' p TmΛ (X a' .rel (f a')) _))))
 mc .Π ω A X .irr =  (a : A .irr) → X a .irr
 mc .Π ω A X .rel f = G[ fΛ ∈ TmΛ ]
       [ ( ∀ {a : A .irr} (a' : A .rel a .fst) →  X a .rel (f a) .fst)
         ∣ p ∈ Ψ ↪ (λ {a} a' → give p TmΛ (X a .rel (f a))
         (apply p (fΛ p) (give' p TmΛ ( A .rel a) a'))) ] , {!   !}
-mc .lam {z} {i = z} f a = f a
-mc .lam {ω} {i = z} f a = {!!}
+mc .lam {z} {i = z} f = f
+mc .lam {ω} {A} {i = z} f a = f (a , A .sec a)
 -- mc .lam {z} {i = ω} {X} f
 --   = (λ p → give' p TmΛ (X _) (f (nope p))) ,
 --     f , λ p q → {!!}
