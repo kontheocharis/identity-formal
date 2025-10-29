@@ -19,8 +19,9 @@ opaque
   ω * j = j
   z * j = z
 
-variable
-  i j : Mode
+private
+  variable
+    i j : Mode
     
 opaque
   unfolding _*_
@@ -44,8 +45,9 @@ opaque
 -- Better definitional computation for _*_
 {-# REWRITE j*ω ω*j z*j j*z #-}
 
-variable
-  ℓ ℓ' ℓp ℓty ℓtm : Level
+private
+  variable
+    ℓ ℓ' ℓp ℓty ℓtm : Level
 
 record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)) where
   field
@@ -67,19 +69,20 @@ record OpTT-sorts {ℓp} {ℓty} {ℓtm} : Type (lsuc (ℓp ⊔ ℓty ⊔ ℓtm)
 module _ (sorts : OpTT-sorts {ℓp} {ℓty} {ℓtm}) where
   open OpTT-sorts sorts
   
-  variable
-    A B C : Ty
-    A~ B~ C~ : $ → Ty
-    X Y Z : Tm _ _ → Ty
-    X~ Y~ Z~ : (p : $) → Tm _ _ → Ty
-    t u v : Tm _ _
-    t~ u~ v~ : (p : $) → Tm _ _
-    f g h : (a : Tm _ _) → Tm _ _
-    f~ g~ h~ : (p : $) → (a : Tm _ _) → Tm _ _
-    e s w : Ex
-    eq : _ ≡ _
-    eq~ : (p : $) → _ ≡ _
-    p q r : $
+  private
+    variable
+      A B C : Ty
+      A~ B~ C~ : $ → Ty
+      X Y Z : Tm _ _ → Ty
+      X~ Y~ Z~ : (p : $) → Tm _ _ → Ty
+      t u v : Tm _ _
+      t~ u~ v~ : (p : $) → Tm _ _
+      f g h : (a : Tm _ _) → Tm _ _
+      f~ g~ h~ : (p : $) → (a : Tm _ _) → Tm _ _
+      e s w : Ex
+      eq : _ ≡ _
+      eq~ : (p : $) → _ ≡ _
+      p q r : $
   
   -- Telescopes
   data Tel : Type (ℓtm ⊔ ℓty)
