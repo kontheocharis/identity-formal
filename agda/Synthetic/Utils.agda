@@ -112,3 +112,11 @@ instance
     → {{_ : P ⋆-Modal A}} → {{_ : P ⋆-Modal B}} → P ⋆-Modal (A × B)
   ×-is-⋆-Modal = {!!}
 
+_>>=_ : P ⋆ M → (M → P ⋆ N) → P ⋆ N
+nope p >>= f = nope p
+η x >>= f = f x
+_>>=_ {N = N} (trivial p {x = x} i) f = ⋆-collapses {M = N} p (f x) i
+
+propFunExt : {A : Prop} {B : A → Type ℓ} {f : (x : A) → B x} {g : (x : A) → B x}
+  → ((x : A) → f x ≡ g x) → f ≡ g
+propFunExt h i x = h x i

@@ -31,6 +31,10 @@ open import Synthetic.Utils
 -- ∧ L → ⊥. These correspond to the unique maps 0 → 0 × Γ(1) and 0 → 1 × Γ(0)
 -- respectively.
 
+private
+  variable
+    ℓ : Level
+
 postulate
   Ψ : Prop
   L : Prop
@@ -87,75 +91,45 @@ ms .Ty = [ Type ∣ Ψ ↪ Λ ]
 ms .Tm z A = L → A .fst
 ms .Tm ω A = A .fst
 ms .Ex = Ψ →ᴰ Λ
-[ ms ]' {A} x = {!!}
+[ ms ]' {A} x q = x
 
--- _>>=_ : Ψ ⋆ A → (A → Ψ ⋆ B) → Ψ ⋆ B
--- nope p >>= f = nope p
--- η x >>= f = f x
--- _>>=_ {B = B} (trivial p {x = x} i) f = ⋆-collapses {M = B} p (f x) i
+foo = funExt
 
--- _>>=_by_ : Ψ ⋆ M → (M → N) → Ψ ⋆-Modal N → N
--- nope p >>= f by m = nope' m p
--- η x >>= f by m = f x
--- _>>=_by_ {N = N} (trivial p {x = x} i) f m = trivial' {M = N} m p {x = f x} i  
+uneraseTms : ∀ {Δ} → L → Tms ms z Δ → Tms ms ω Δ
+uneraseTms q ε = ε
+uneraseTms q (_,_ {j = z} a γ) = (λ z₁ → a q) , uneraseTms q γ
+uneraseTms q (_,_ {j = ω} a γ) = a q , uneraseTms q γ
 
--- mc : OpTT-ctors ms
--- ∣ mc ∣ {A~ = A~} x p = give' p Λ (rel' (A~ p)) (x p)
--- ⟨ mc ⟩ {z} {A~} x p =  nope' (A~ p .irr-modal) p  
--- ⟨ mc ⟩ {ω} {A~} x p = give p Λ (rel' (A~ p)) (x p)
--- mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p Λ (rel' (A~ p)) (e p) j
--- mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p Λ (rel' (A~ p)) (t~ p) j
--- mc .[⟨⟩] {A~} {p = p} = sym (trivial' (A~ p .irr-modal) p) 
--- mc .∅ = id
--- -- mc .bind x ε = x ε
--- -- mc .bind x (nope p , γ) = nope p
--- -- mc .bind x (η x₁ , γ) = {!   !}
--- -- mc .bind x (trivial p i , γ) = {!   !}
--- -- mc .bind[]-1 = {!   !}
--- -- mc .bind[]-2 = {!   !}
--- mc .lm f p = lambda p (λ q → f (λ _ → q) p)
--- mc .ap x y p = apply p (x p) (y p)
--- mc .ze = zeroΛ
--- mc .su x p = succΛ p (x p)
+uneraseTms-id : ∀ {Δ} {q : L} {γ : Tms ms z Δ} → [[_]] ms (uneraseTms q γ) ≡ γ
+uneraseTms-id {q = q} {γ = ε} = refl
+uneraseTms-id {q = q} {γ = _,_ {j = z} a γ} i = a , uneraseTms-id {q = q} {γ = γ} i
+uneraseTms-id {q = q} {γ = _,_ {j = ω} a γ} i = a , uneraseTms-id {q = q} {γ = γ} i
+
+mc : OpTT-ctors ms
+∣ mc ∣ {A~ = A~} x p = give' p Λ (A~ p) (x p)
+⟨ mc ⟩ {z} {A~} x p q = ⊥-elim (disjoint p q)
+⟨ mc ⟩ {ω} {A~} x p = give p Λ (A~ p) (x p)
+mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p Λ (A~ p) (e p) j
+mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p Λ (A~ p) (t~ p) j
+mc .[⟨⟩] {A~} {p = p} = propFunExt λ q → ⊥-elim (disjoint p q)
+mc .∅ = id
+mc .bind {X' = X'} f γ q = transport (λ i → X' (uneraseTms-id {q = q} {γ = γ} i) .fst) (f (uneraseTms q γ) q)
+mc .bind[]-1 = {!   !}
+mc .bind[]-2 = {!   !}
+mc .lm f p = lambda p (λ q → f (λ _ → q) p)
+mc .ap x y p = apply p (x p) (y p)
+mc .ze = zeroΛ
+mc .su x p = succΛ p (x p)
 -- mc .rec = λ z₁ z₂ z₃ → z₁
--- mc .Π z A X .irr = (a : A .irr) → X a .irr
--- mc .Π z A X .rel f = G[ fΛ ∈ Λ ]
---       [ ((a : A .irr) → X a .rel (f a) .fst)
---         ∣ p ∈ Ψ ↪ (λ a → give p Λ (X a .rel (f a)) (fΛ p)) ]
---       ,  λ p → G-collapses p _ _
--- mc .Π z A X .irr-modal .prf .equiv-proof y = {!  !}
--- -- mc .Π z A X .sec f
--- --   = ((λ p → 
--- --       let a = nope' (A .irr-modal) p in
--- --       give' p Λ (X a .rel (f a)) (X a .sec (f a)))
--- --     , (λ a → X a .sec (f a)) , λ p → funExt λ a →
--- --       let a' = nope' (A .irr-modal) p in
--- --       subst (λ a → X a .sec (f a) ≡ give p Λ (X a .rel (f a)) _)
--- --         (trivial' (A .irr-modal) p {x = a})
--- --         (sym (give-give' p Λ (X a' .rel (f a')) _)))
--- mc .Π ω A X .irr =  (a : A .irr) → X a .irr
--- mc .Π ω A X .rel f = G[ fΛ ∈ Λ ]
---       [ ( ∀ {a : A .irr} (ar : A .rel a .fst) →  X a .rel (f a) .fst)
---         ∣ p ∈ Ψ ↪ (λ {a} ar → give p Λ (X a .rel (f a))
---         (apply p (fΛ p) (give' p Λ ( A .rel a) ar))) ]
---       ,  λ p → G-collapses p _ _
--- mc .Π ω A X .irr-modal .prf .equiv-proof y = {!  !}
--- -- mc .Π ω A X .sec f
--- --   = (λ p →
--- --       let a = nope' (A .irr-modal) p in
--- --        lambda p (λ x →  give' p Λ (X a .rel (f a)) (X a .sec (f a))))
--- --     ,  (λ {a} ar → X a .sec (f a)) ,  λ p → implicitFunExt λ {a} → funExt λ ar →
--- --       let a' = nope' (A .irr-modal) p in
--- --       {!!} -- doable
--- --        -- subst (λ aa → X aa .sec (f aa) ≡ give p Λ (X aa .rel (f aa))
--- --        --    (Λ.apply (Λm _)
--- --        --          (Λ.lambda (Λm _)
--- --        --            (λ x →
--- --        --              give' _ (λ p₁ → Λ.Λ (Λm _)) (X a' .rel (f a'))
--- --        --              (X a' .sec (f a'))))
--- --        --          (give' _ (λ p₁ → Λ.Λ (Λm _)) (A .rel a) ar))
--- --        --  ) {!!} {!!} 
--- mc .lam {z} {i = z} f = f
+mc .Π z A X = G[ f ∈ Λ ]
+  [ ((a : L → A .fst) → X a .fst)
+    ∣ p ∈ Ψ ↪ (λ a → give p Λ (X a) (f p)) ]
+  , λ p → G-collapses p _ _
+mc .Π ω A X =  G[ f ∈ Λ ]
+  [ ((a : A .fst) → X (λ _ → a) .fst)
+    ∣ p ∈ Ψ ↪ (λ a → give p Λ (X (λ _ → a)) (apply p (f p) (give' p Λ A a))) ]
+  , λ p → G-collapses p _ _
+mc .lam {z} {i = z} = {! !}
 -- mc .lam {ω} {A = A} {i = z} {X = X} f a =  A .sec a >>= (λ a' → f (a , a')) by  X a .irr-modal
 -- mc .lam {z} {A = A} {i = ω} {X} f =  (λ a → f a .fst)
 --   , (λ p →
