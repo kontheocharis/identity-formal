@@ -8,6 +8,7 @@ open import Cubical.Foundations.Transport
 open import Cubical.Data.Sigma
 open import Data.Unit
 open import Data.Empty
+open import Data.Nat hiding (zero)
 open import Agda.Primitive
 
 open import Synthetic.Model
@@ -73,6 +74,10 @@ record LC : Set (lsuc ℓ) where
   id : Λ
   id = lambda (λ x → x)
 
+  emb-ℕ : ℕ → Λ 
+  emb-ℕ 0 = zeroΛ 
+  emb-ℕ (suc x) = succΛ (emb-ℕ x)
+
 -- We have a Ψ →-modal model of Λ in the glued topos.
 postulate
   LC-syntax : Ψ → LC {ℓ}
@@ -136,8 +141,8 @@ mc .lam {ω} {A = A} {i = ω} {X = X} f =
   ( λ p →  lambda p (λ x → give' p Λ (X _) (f (give p Λ A x))))
   , f
   , {!!}  -- ok
-mc .app {z} {z} f a q =  f q .snd .fst a
-mc .app {z} {ω} f a q =  f q .snd .fst (a q) 
+mc .app {z} {z} f a q = f q .snd .fst a
+mc .app {z} {ω} f a q = f q .snd .fst (a q) 
 mc .app {ω} {z} (_ , f' , _) a = f' a
 mc .app {ω} {ω} (_ , f' , _) a = f' a 
 mc .lam-app-z = {! !} -- ok
@@ -155,19 +160,23 @@ mc .unspec {z} {A = A} {e} t q = t q .snd .fst .fst
 mc .unspec {ω} {A = A} {e} t = t .snd .fst .fst
 mc .∣spec∣ = {!   !} -- ok
 mc .∣unspec∣ {e} {A~} {t~} = {! !} -- ok
--- -- mc .[spec] = {!   !}
+mc .[spec] = {!   !}
 -- -- mc .[unspec] = {!   !}
--- -- mc .Nat = {!   !}
--- -- mc .zero = {!   !}
--- -- mc .succ = {!   !}
--- -- mc .elim-Nat = {!   !}
+mc .Nat =  G[ x ∈ Λ ] (Ψ ⋆ (Σ[ n ∈ ℕ ] (x ≡ λ p → emb-ℕ p n))) , λ p → G-collapses p _ _
+mc .zero {z} _ = zeroΛ , η (0 , refl) 
+mc .zero {ω} = zeroΛ , η (0 , refl) 
+mc .succ {z} n q = (λ p → succΛ p (n q .fst p))
+  , do n' , prf ← n q .snd ; η (suc n' ,  λ i p → lambda p (λ z → lambda p (apply p (apply p (prf i p) z))))
+mc .succ {ω} n = (λ p → succΛ p (n .fst p))
+  , do n' , prf ← n .snd ; η (suc n' ,  λ i p → lambda p (λ z → lambda p (apply p (apply p (prf i p) z))))
+mc .elim-Nat {i} X mz ms n = {! i!}
 -- -- mc .elim-Nat-zero-z = {!   !}
 -- -- mc .elim-Nat-succ-z = {!   !}
 -- -- mc .∣zero∣ = {!   !}
 -- -- mc .∣succ∣ = {!   !}
 -- -- mc .∣elim-Nat-ω∣ = {!   !}
--- -- mc .[zero] = {!   !}
--- -- mc .[succ] = {!   !}
+mc .[zero] = refl 
+mc .[succ] = refl
 -- -- mc .[elim-Nat] = {!   !}
 -- -- mc .Num = {!   !}
 -- -- mc .nat-num = {!   !}
