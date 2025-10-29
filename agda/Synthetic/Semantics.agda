@@ -15,43 +15,66 @@ open import Synthetic.Model
 {-# BUILTIN REWRITE _≡_ #-}
 
 -- We will define semantics for the synthetic model by working in the glued
--- topos Set ↓ Γ. This can be emulated in Agda by postulates.
+-- topos Set ↓ <Γ , Id> . This can be emulated in Agda by postulates.
 
 -- In particular, let Λ be the syntactic (initial) uni-typed CwF of lambda
 -- calculus terms quotiented by βη. Its objects are natural numbers. We have the
 -- presheaf category Psh(Λ) which is a topos, and contains a second-order model
 -- of Λ which is the syntax. We can glue along the global sections functor Γ :
--- Psh(Λ) → Set to get a new topos Set ↓ Γ.
+-- Psh(Λ) → Set to get a new topos Set ↓ Γ. However, instead we glue along
+-- < Γ , Id > : Psh(Λ) × Set → Set which sends (X , A) to X × Γ(A). This
+-- also gives us a "purely logical" projection free of any syntactic data.
+-- We will use the left slot Psh(Λ) for the computational layer, and the
+-- right slot Set for the logical layer. We postulate two propositions Ψ and L
+-- in the internal language of Set ↓ < Γ , Id > which are disjoint, i.e., Ψ
+-- ∧ L → ⊥. These correspond to the unique maps 0 → 0 × Γ(1) and 0 → 1 × Γ(0)
+-- respectively.
 
 postulate
   Ψ : Prop
+  L : Prop
+  disjoint : Ψ → L → ⊥
   
 variable
   M N : Type ℓ
+  P : Prop
   
 record _true (P : Prop) : Type where
   constructor [_]
   field
     fact : P
 
+data _or_ (P Q : Prop) : Prop where
+  inl : P → P or Q
+  inr : Q → P or Q
+
 open _true
 
 Ψ⇒_ : Type ℓ → Type ℓ
 Ψ⇒_ M = (p : Ψ) → M
 
-data Ψ*_ (M : Type ℓ) : Type ℓ where
-  nope : (p : Ψ) → Ψ* M
-  η : M → Ψ* M
-  trivial : (p : Ψ) {x : M} → nope p ≡ η x
+L⇒_ : Type ℓ → Type ℓ
+L⇒_ M = (p : L) → M
 
-*-collapses : (p : Ψ) (y : Ψ* M) → nope p ≡ y
+data _⋆_ (P : Prop) (M : Type ℓ) : Type ℓ where
+  nope : (p : P) → P ⋆ M
+  η : M → P ⋆ M
+  trivial : (p : P) {x : M} → nope p ≡ η x
+
+Ψ*_ : Type ℓ → Type ℓ
+Ψ* M = Ψ ⋆ M
+
+L*_ : Type ℓ → Type ℓ
+L* M = L ⋆ M
+
+*-collapses : (p : P) (y : P ⋆ M) → nope p ≡ y
 *-collapses p (nope p) = refl
 *-collapses p (η x) = trivial p
 *-collapses p (trivial p {x = x} i) j = trivial p {x = x} (i ∧ j)
 
-Ψ*Ψ⇒-trivial : Ψ⇒ (Ψ* M) ≃ ⊤
-Ψ*Ψ⇒-trivial .fst x = tt
-Ψ*Ψ⇒-trivial .snd .equiv-proof tt = (nope , refl) , λ (y , _) i → (λ p → *-collapses p (y p) i) , refl
+Ψ*Ψ⇒-trivial : P → (P ⋆ M) ≃ ⊤
+Ψ*Ψ⇒-trivial p .fst x = tt
+Ψ*Ψ⇒-trivial p .snd .equiv-proof tt = (nope p , refl) , λ (y , _) i → ( *-collapses p y i) , refl
 
 record Ψ*-Modal (M : Type ℓ) : Type ℓ where
   no-eta-equality
@@ -67,7 +90,6 @@ record Ψ*-Modal (M : Type ℓ) : Type ℓ where
 
   trivial' : (p : Ψ) {x : M} → nope' p ≡ x
   trivial' p {x = x} = collapses p .snd x
-
 
 open Ψ*-Modal
 
@@ -273,7 +295,7 @@ mc .Spec A x .irr = A .irr
 mc .Spec A x .irr-modal = A .irr-modal
 mc .Spec A x .rel t = G[ e ∈ TmΛ ] ([ A .rel t .fst ∣ p ∈ Ψ ↪ give p TmΛ (A .rel t) (e p) ] × Ψ* (x ≡ e))
   ,  λ p →  G-collapses p _ _
-mc .Spec A x .sec a = {! !}
+mc .Spec A x .sec a = {!  !}
 -- mc .specz = {!   !}
 -- mc .spec = {!   !}
 -- mc .unspec = {!   !}
