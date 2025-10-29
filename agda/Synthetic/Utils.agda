@@ -108,6 +108,9 @@ instance
   ⋆-is-⋆-Modal : P ⋆-Modal (P ⋆ M)
   ⋆-is-⋆-Modal = {!!}
 
+  or⋆-is-⋆-Modal : ∀ {Q} → P ⋆-Modal ((Q or P) ⋆ M)
+  or⋆-is-⋆-Modal = {!!}
+
   ×-is-⋆-Modal : {A B : Type ℓ}
     → {{_ : P ⋆-Modal A}} → {{_ : P ⋆-Modal B}} → P ⋆-Modal (A × B)
   ×-is-⋆-Modal = {!!}

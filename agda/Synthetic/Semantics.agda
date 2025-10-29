@@ -39,6 +39,22 @@ postulate
   Ψ : Prop
   L : Prop
   disjoint : Ψ → L → ⊥
+
+●_ : Type ℓ → Type ℓ
+● A = (L or Ψ) ⋆ A
+
+nocompᴰ : ∀ {A : Ψ → Type ℓ} → (q : L) → (Ψ →ᴰ A)
+nocompᴰ q = λ p → ⊥-elim (disjoint p q)
+
+nocomp : ∀ {A : Type ℓ} → L → (Ψ → A)
+nocomp q = λ p → ⊥-elim (disjoint p q)
+
+Ψ-contr-under-L : ∀ {A : Ψ → Type ℓ} → L → isContr (Ψ →ᴰ A)
+Ψ-contr-under-L q = nocompᴰ q ,  λ y → propFunExt (nocompᴰ q)
+
+no-Ψ-glue-in-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}
+  → (q : L) → G A X {{y}} ≡ X (nocompᴰ q)
+no-Ψ-glue-in-L q = isoToPath (Σ-contractFstIso (Ψ-contr-under-L q))
   
 record LC : Set (lsuc ℓ) where
   field
@@ -68,23 +84,6 @@ open OpTT
 open OpTT-sorts
 open OpTT-ctors
 
--- record Tyᴿ : Type1 where
---   field
---     irr : Type
---     irr-modal :  ⋆-Modal irr
---     rel : irr → [ Type ∣ Ψ ↪ Λ ]
---     sec : (a : irr) → Ψ ⋆ (rel a .fst)
-
---   bundle-collapses : (p : Ψ) → (Σ[ t ∈ irr ] rel t .fst) ≡ Λ p
---   bundle-collapses p =
---     let k = isoToPath (Σ-contractFstIso (collapses irr-modal p))
---     in  _∙_ k (rel (collapses irr-modal p .fst) .snd p) 
-
---   rel' : [ Type ∣ Ψ ↪ Λ ]
---   rel' =  ( Σ[ t ∈ irr ] rel t .fst) , bundle-collapses
-
--- open Tyᴿ
-
 ms : OpTT-sorts {lzero} {lsuc lzero} {lzero}
 ms .$ = Ψ
 ms .Ty = [ Type ∣ Ψ ↪ Λ ]
@@ -92,8 +91,6 @@ ms .Tm z A = L → A .fst
 ms .Tm ω A = A .fst
 ms .Ex = Ψ →ᴰ Λ
 [ ms ]' {A} x q = x
-
-foo = funExt
 
 uneraseTms : ∀ {Δ} → L → Tms ms z Δ → Tms ms ω Δ
 uneraseTms q ε = ε
@@ -107,15 +104,15 @@ uneraseTms-id {q = q} {γ = _,_ {j = ω} a γ} i = a , uneraseTms-id {q = q} {γ
 
 mc : OpTT-ctors ms
 ∣ mc ∣ {A~ = A~} x p = give' p Λ (A~ p) (x p)
-⟨ mc ⟩ {z} {A~} x p q = ⊥-elim (disjoint p q)
+⟨ mc ⟩ {z} {A~} x p q = nocomp q p
 ⟨ mc ⟩ {ω} {A~} x p = give p Λ (A~ p) (x p)
 mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p Λ (A~ p) (e p) j
 mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p Λ (A~ p) (t~ p) j
-mc .[⟨⟩] {A~} {p = p} = propFunExt λ q → ⊥-elim (disjoint p q)
+mc .[⟨⟩] {A~} {p = p} = propFunExt λ q → nocomp q p
 mc .∅ = id
 mc .bind {X' = X'} f γ q = transport (λ i → X' (uneraseTms-id {q = q} {γ = γ} i) .fst) (f (uneraseTms q γ) q)
-mc .bind[]-1 = {!   !}
-mc .bind[]-2 = {!   !}
+mc .bind[]-1 = {!   !}  -- ok
+mc .bind[]-2 = {!   !}  -- ok
 mc .lm f p = lambda p (λ q → f (λ _ → q) p)
 mc .ap x y p = apply p (x p) (y p)
 mc .ze = zeroΛ
@@ -129,42 +126,35 @@ mc .Π ω A X =  G[ f ∈ Λ ]
   [ ((a : A .fst) → X (λ _ → a) .fst)
     ∣ p ∈ Ψ ↪ (λ a → give p Λ (X (λ _ → a)) (apply p (f p) (give' p Λ A a))) ]
   , λ p → G-collapses p _ _
-mc .lam {z} {i = z} = {! !}
--- mc .lam {ω} {A = A} {i = z} {X = X} f a =  A .sec a >>= (λ a' → f (a , a')) by  X a .irr-modal
--- mc .lam {z} {A = A} {i = ω} {X} f =  (λ a → f a .fst)
---   , (λ p →
---     let a' = nope' (A .irr-modal) p in
---     give' p Λ (rel' (X a')) (f a'))
---   -- ,  (λ a → X a .sec (f a .fst)) , {!!} -- doable
---   ,  ({!!}) , {!!} -- doable
--- mc .lam {ω} {A = A} {i = ω} {X = X} f = ( λ a → 
-   
---    {!!}) , {!!}
---   -- , (λ p → lambda p (λ x → give' p Λ (rel' (X _)) (f (give p Λ (rel' A) x)) ))
---   -- , (λ {a} ar → X a .sec (f (a , A .sec a) .fst)) 
---   -- ,  λ p → {!!} -- doable
--- mc .app {z} {z} x a = x a
--- mc .app {z} {ω} x a = {! !}
--- mc .app {ω} {z} x a = x .fst a , x .snd .snd .fst a
--- mc .app {ω} {ω} x a = {! !}
--- mc .lam-app-z = refl
--- mc .app-lam-z = refl
--- mc .∣lam-ω∣ = {!   !}
+mc .lam {z} {i = z} f q = transport (sym (no-Ψ-glue-in-L {y = [∣↪]-is-Ψ⋆-Modal} q)) ((λ a → f a q) , nocompᴰ q) 
+mc .lam {ω} {i = z} f q = transport (sym (no-Ψ-glue-in-L {y = [∣↪]-is-Ψ⋆-Modal} q)) ((λ a → f a q) , nocompᴰ q) 
+mc .lam {z} {A = A} {i = ω} {X = X} f =
+  (λ p → give' p Λ (X _) (f (λ q → nocomp q p)))
+  , f
+  ,  λ p → funExt λ a →  sym ({!!}) -- ok
+mc .lam {ω} {A = A} {i = ω} {X = X} f =
+  ( λ p →  lambda p (λ x → give' p Λ (X _) (f (give p Λ A x))))
+  , f
+  , {!!}  -- ok
+mc .app {z} {z} f a q =  f q .snd .fst a
+mc .app {z} {ω} f a q =  f q .snd .fst (a q) 
+mc .app {ω} {z} (_ , f' , _) a = f' a
+mc .app {ω} {ω} (_ , f' , _) a = f' a 
+mc .lam-app-z = {! !} -- ok
+mc .app-lam-z = {! !} -- ok
+mc .∣lam-ω∣ = {!   !}
 -- mc .∣app-ω∣ = {!   !}
 -- -- mc .∣lam-z∣ = {!   !}
 -- -- mc .∣app-z∣ = {!   !}
 -- mc .[lam] = {! refl  !}
 -- -- mc .[app] = {!   !}
--- mc .Spec A x .irr = A .irr
--- mc .Spec A x .irr-modal = A .irr-modal
--- mc .Spec A x .rel t = G[ e ∈ Λ ] ([ A .rel t .fst ∣ p ∈ Ψ ↪ give p Λ (A .rel t) (e p) ] × Ψ ⋆ (x ≡ e))
---   ,  λ p →  G-collapses p _ _
--- mc .Spec A x .sec a = {!  !}
--- -- mc .specz = {!   !}
--- -- mc .spec = {!   !}
--- -- mc .unspec = {!   !}
--- -- mc .∣spec∣ = {!   !}
--- -- mc .∣unspec∣ = {!   !}
+mc .Spec A x = G[ y ∈ Λ ] ([ A .fst ∣ p ∈ Ψ ↪ give p Λ A (y p) ] × (● (x ≡ y))) , λ p → G-collapses p _ _ 
+mc .specz t q = transport (sym (no-Ψ-glue-in-L {y = ×-is-⋆-Modal} q)) ((t q , nocompᴰ q) , nope (inl q))
+mc .spec {A = A} {e = e} t prf = (λ p → give' p Λ A t) , ( t ,  λ p → sym (give-give' p Λ A t)) , η (sym prf)
+mc .unspec {z} {A = A} {e} t q = t q .snd .fst .fst
+mc .unspec {ω} {A = A} {e} t = t .snd .fst .fst
+mc .∣spec∣ = {!   !} -- ok
+mc .∣unspec∣ {e} {A~} {t~} = {! !} -- ok
 -- -- mc .[spec] = {!   !}
 -- -- mc .[unspec] = {!   !}
 -- -- mc .Nat = {!   !}
