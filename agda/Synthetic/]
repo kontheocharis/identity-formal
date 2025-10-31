@@ -230,11 +230,7 @@ mc .succ {ω} n = (λ p → succΛ p (n .fst p)), do
   η (suc n' , λ i p → succΛ p (prf i p))
 mc .elim-Nat {ω} X mz ms n =
   reconstruct
-    ((λ p → give p Λ (X _)
-      (recΛ p
-        (give' p Λ (X _) mz)
-        (λ k pk → give' p Λ (X _) (ms ({! !} , give p Λ (X _) pk , ε)))
-        (n .fst p)))
+    ((λ p → give p Λ (X _) (recΛ p (give' p Λ (X _) mz) {!!} {!!})  )
     , {!!})
 mc .elim-Nat {z} X mz ms n q = {!!}
 -- -- mc .elim-Nat-zero-z = {!   !}
