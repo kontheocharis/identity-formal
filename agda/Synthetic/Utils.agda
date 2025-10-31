@@ -147,8 +147,3 @@ reconstruct = reconstruction .Iso.fun
 
 deconstruct : N → G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ]
 deconstruct = reconstruction .Iso.inv
-
-module ≡-Reasoning {a} {A : Set a} where
-  open begin-syntax (Path A) {S = Path A} ( λ x → x) public
-  open ≡-noncomputing-syntax (Path A) public
-  open end-syntax (Path A) refl public
