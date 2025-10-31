@@ -2,6 +2,8 @@
 module Synthetic.Semantics where
 
 open import Cubical.Foundations.Prelude
+  renaming (_∙_ to trans)
+  hiding (_∎; step-≡)
 open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Transport
@@ -13,6 +15,8 @@ open import Agda.Primitive
 
 open import Synthetic.Model
 open import Synthetic.Utils
+
+open ≡-Reasoning
   
 {-# BUILTIN REWRITE _≡_ #-}
 
@@ -56,35 +60,76 @@ nocomp q = λ p → ⊥-elim (disjoint p q)
 no-Ψ-glue-in-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}
   → (q : L) → G A X {{y}} ≡ X (nocompᴰ q)
 no-Ψ-glue-in-L q = isoToPath (Σ-contractFstIso (Ψ-contr-under-L q))
-  
+
+unglue-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {{y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}}
+  → (q : L) → G A X {{y}} → X (nocompᴰ q)
+unglue-L {{y}} q t = transport (no-Ψ-glue-in-L {y = y} q) t
+
+glue-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {{y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}}
+  → (q : L) → X (nocompᴰ q) → G A X {{y}}
+glue-L {{y}} q t = transport (sym (no-Ψ-glue-in-L {y = y} q)) t
+
 record LC : Set (lsuc ℓ) where
   field
     Λ : Type ℓ
     lambda : (f : Λ → Λ) → Λ
     apply : Λ → Λ → Λ
-    beta : ∀ {f x} → apply (lambda f) x ≡ f x
-    eta : ∀ {f} → lambda (λ x → apply f x) ≡ f
+    beta : ∀ f x → apply (lambda f) x ≡ f x
+    eta : ∀ f → lambda (λ x → apply f x) ≡ f
+
+  _$_ : Λ → Λ → Λ
+  x $ y = apply x y
+
+  infixl 5 _$_
+
+  syntax lambda (λ x → t) = ƛ x ⇒ t
+
+  infixl 4 ƛ _ ⇒ _
     
   zeroΛ : Λ
-  zeroΛ = lambda (λ z → lambda (λ s → z))
+  zeroΛ = ƛ z ⇒ ƛ s ⇒ z
 
   succΛ : Λ → Λ
-  succΛ n = lambda (λ z → lambda (λ s → apply (apply n z) s))
+  succΛ n = ƛ z ⇒ ƛ s ⇒ (s $ n $ (n $ z $ s))
 
   id : Λ
-  id = lambda (λ x → x)
+  id = ƛ x ⇒ x
+
+  recΛ : Λ → (Λ → Λ → Λ) → Λ → Λ
+  recΛ zr su n = n $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk)
+
+  recΛβ : ∀ {zr su} → recΛ zr su zeroΛ ≡ zr
+  recΛβ {zr} {su} = begin
+      {!!}
+    ≡⟨ {!!} ⟩
+      {!!}
+    ≡⟨ {!!} ⟩
+      {!!}
+    ≡⟨ {!!} ⟩
+      {!!}
+    ∎
+
 
   emb-ℕ : ℕ → Λ 
   emb-ℕ 0 = zeroΛ 
   emb-ℕ (suc x) = succΛ (emb-ℕ x)
 
 -- We have a Ψ →-modal model of Λ in the glued topos.
-postulate
-  LC-syntax : Ψ → LC {ℓ}
+postulate instance
+  LC-syntax : {p : Ψ} → LC {ℓ}
   
 module _ (p : Ψ) where
-  open LC {lzero} (LC-syntax p) public 
-  
+  open LC {lzero} (LC-syntax {p = p}) public 
+
+  infixr 5 _∣_$_
+
+  _∣_$_ : Λ → Λ → Λ
+  _∣_$_ x y = apply x y
+
+  infixr 10 _ ∣ ƛ _ ⇒ _
+
+  syntax lambda q (λ x → t) = q ∣ ƛ x ⇒ t
+
 open OpTT
 open OpTT-sorts
 open OpTT-ctors
@@ -131,8 +176,8 @@ mc .Π ω A X =  G[ f ∈ Λ ]
   [ ((a : A .fst) → X (λ _ → a) .fst)
     ∣ p ∈ Ψ ↪ (λ a → give p Λ (X (λ _ → a)) (apply p (f p) (give' p Λ A a))) ]
   , λ p → G-collapses p _ _
-mc .lam {z} {i = z} f q = transport (sym (no-Ψ-glue-in-L {y = [∣↪]-is-Ψ⋆-Modal} q)) ((λ a → f a q) , nocompᴰ q) 
-mc .lam {ω} {i = z} f q = transport (sym (no-Ψ-glue-in-L {y = [∣↪]-is-Ψ⋆-Modal} q)) ((λ a → f a q) , nocompᴰ q) 
+mc .lam {z} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
+mc .lam {ω} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
 mc .lam {z} {A = A} {i = ω} {X = X} f =
   (λ p → give' p Λ (X _) (f (λ q → nocomp q p)))
   , f
@@ -154,7 +199,7 @@ mc .∣lam-ω∣ = {!   !}
 -- mc .[lam] = {! refl  !}
 -- -- mc .[app] = {!   !}
 mc .Spec A x = G[ y ∈ Λ ] ([ A .fst ∣ p ∈ Ψ ↪ give p Λ A (y p) ] × (● (x ≡ y))) , λ p → G-collapses p _ _ 
-mc .specz t q = transport (sym (no-Ψ-glue-in-L {y = ×-is-⋆-Modal} q)) ((t q , nocompᴰ q) , nope (inl q))
+mc .specz t q = glue-L q ((t q , nocompᴰ q) , nope (inl q))
 mc .spec {A = A} {e = e} t prf = (λ p → give' p Λ A t) , ( t ,  λ p → sym (give-give' p Λ A t)) , η (sym prf)
 mc .unspec {z} {A = A} {e} t q = t q .snd .fst .fst
 mc .unspec {ω} {A = A} {e} t = t .snd .fst .fst
@@ -165,11 +210,15 @@ mc .[spec] = {!   !}
 mc .Nat =  G[ x ∈ Λ ] (Ψ ⋆ (Σ[ n ∈ ℕ ] (x ≡ λ p → emb-ℕ p n))) , λ p → G-collapses p _ _
 mc .zero {z} _ = zeroΛ , η (0 , refl) 
 mc .zero {ω} = zeroΛ , η (0 , refl) 
-mc .succ {z} n q = (λ p → succΛ p (n q .fst p))
-  , do n' , prf ← n q .snd ; η (suc n' ,  λ i p → lambda p (λ z → lambda p (apply p (apply p (prf i p) z))))
-mc .succ {ω} n = (λ p → succΛ p (n .fst p))
-  , do n' , prf ← n .snd ; η (suc n' ,  λ i p → lambda p (λ z → lambda p (apply p (apply p (prf i p) z))))
-mc .elim-Nat {i} X mz ms n = {! i!}
+mc .succ {z} n q = (λ p → succΛ p (n q .fst p)) , do
+  n' , prf ← n q .snd
+  η (suc n' , λ i p →  succΛ p (prf i p))
+mc .succ {ω} n = (λ p → succΛ p (n .fst p)), do
+  n' , prf ← n .snd
+  η (suc n' , λ i p → succΛ p (prf i p))
+mc .elim-Nat {ω} X mz ms n =
+  reconstruct ((λ p → give p Λ (X _) {! !}  ) , {!!})
+mc .elim-Nat {z} X mz ms n q = {!!}
 -- -- mc .elim-Nat-zero-z = {!   !}
 -- -- mc .elim-Nat-succ-z = {!   !}
 -- -- mc .∣zero∣ = {!   !}

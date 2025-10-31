@@ -1,7 +1,7 @@
 {-# OPTIONS --prop --cubical -WnoUnsupportedIndexedMatch --allow-unsolved-metas #-}
 module Synthetic.Utils where
 
-open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.Prelude renaming (_∙_ to trans)
 open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Transport
@@ -9,12 +9,21 @@ open import Cubical.Data.Sigma
 open import Data.Unit
 open import Data.Empty
 open import Agda.Primitive
+open import Relation.Binary.Reasoning.Syntax
+import Agda.Builtin.Equality
 
 private
   variable
     ℓ ℓ' : Level
     M N : Type ℓ
     P : Prop
+
+propFunExt : {A : Prop} {B : A → Type ℓ} {f : (x : A) → B x} {g : (x : A) → B x}
+  → ((x : A) → f x ≡ g x) → f ≡ g
+propFunExt h i x = h x i
+
+case_to_of_ : {A : Type ℓ} (x : A) (P : A → Type ℓ') (f : (a : A) → P a) → P x
+case_to_of_ x P f = f x
   
 record _true (P : Prop) : Type where
   constructor [_]
@@ -95,6 +104,12 @@ G : (A : P → (Type ℓ))
   → Type ℓ
 G {P = P} A B = Σ[ a ∈ P →ᴰ A ] B a
 
+G' : (A : P → (Type ℓ))
+  → (B : (P →ᴰ A) → Type ℓ)
+  → {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → Type ℓ
+G' {P = P} A B = Σ[ a ∈ P →ᴰ A ] B a
+
 syntax G A (λ x → B) = G[ x ∈ A ] B
 
 G-collapses : ∀ (p : P) (A : P → (Type ℓ)) (B : P →ᴰ A → Type ℓ)
@@ -120,6 +135,20 @@ nope p >>= f = nope p
 η x >>= f = f x
 _>>=_ {N = N} (trivial p {x = x} i) f = ⋆-collapses {M = N} p (f x) i
 
-propFunExt : {A : Prop} {B : A → Type ℓ} {f : (x : A) → B x} {g : (x : A) → B x}
-  → ((x : A) → f x ≡ g x) → f ≡ g
-propFunExt h i x = h x i
+reconstruction : Iso (G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ]) N
+reconstruction .Iso.fun x = x .snd .fst
+reconstruction .Iso.inv x = (λ p → x) , x , λ _ → refl
+reconstruction .Iso.rightInv x = refl
+reconstruction .Iso.leftInv (x , y , z) i = (λ p → z p i)
+  , y , λ p j → z p (i ∧ j)
+
+reconstruct : G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ] → N
+reconstruct = reconstruction .Iso.fun
+
+deconstruct : N → G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ]
+deconstruct = reconstruction .Iso.inv
+
+module ≡-Reasoning {a} {A : Set a} where
+  open begin-syntax (Path A) {S = Path A} ( λ x → x) public
+  open ≡-noncomputing-syntax (Path A) public
+  open end-syntax (Path A) refl public
