@@ -14,6 +14,8 @@ open import Agda.Primitive
 
 open import Synthetic.Model
 open import Synthetic.Utils
+
+open Iso
   
 {-# BUILTIN REWRITE _≡_ #-}
 
@@ -183,11 +185,11 @@ mc .su x p = succΛ p (x p)
 mc .Π z A X = G[ f ∈ Λ ]
   [ ((a : L → A .fst) → X a .fst)
     ∣ p ∈ Ψ ↪ (λ a → give p Λ (X a) (f p)) ]
-  , λ p → G-collapses p _ _
+  , λ p → G-collapses p
 mc .Π ω A X =  G[ f ∈ Λ ]
   [ ((a : A .fst) → X (λ _ → a) .fst)
     ∣ p ∈ Ψ ↪ (λ a → give p Λ (X (λ _ → a)) (apply p (f p) (give' p Λ A a))) ]
-  , λ p → G-collapses p _ _
+  , λ p → G-collapses p
 mc .lam {z} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
 mc .lam {ω} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
 mc .lam {z} {A = A} {i = ω} {X = X} f =
@@ -210,7 +212,7 @@ mc .∣lam-ω∣ = {!   !}
 -- -- mc .∣app-z∣ = {!   !}
 -- mc .[lam] = {! refl  !}
 -- -- mc .[app] = {!   !}
-mc .Spec A x = G[ y ∈ Λ ] ([ A .fst ∣ p ∈ Ψ ↪ give p Λ A (y p) ] × (● (x ≡ y))) , λ p → G-collapses p _ _ 
+mc .Spec A x = G[ y ∈ Λ ] ([ A .fst ∣ p ∈ Ψ ↪ give p Λ A (y p) ] × (● (x ≡ y))) , λ p → G-collapses p
 mc .specz t q = glue-L q ((t q , nocompᴰ q) , nope (inl q))
 mc .spec {A = A} {e = e} t prf = (λ p → give' p Λ A t) , ( t ,  λ p → sym (give-give' p Λ A t)) , η (sym prf)
 mc .unspec {z} {A = A} {e} t q = t q .snd .fst .fst
@@ -219,7 +221,7 @@ mc .∣spec∣ = {!   !} -- ok
 mc .∣unspec∣ {e} {A~} {t~} = {! !} -- ok
 mc .[spec] = {!   !}
 -- -- mc .[unspec] = {!   !}
-mc .Nat =  G[ x ∈ Λ ] (Ψ ⋆ (Σ[ n ∈ ℕ ] (x ≡ λ p → emb-ℕ p n))) , λ p → G-collapses p _ _
+mc .Nat =  G[ x ∈ Λ ] (Ψ ⋆ (Σ[ n ∈ ℕ ] (x ≡ λ p → emb-ℕ p n))) , λ p → G-collapses p
 mc .zero {z} _ = zeroΛ , η (0 , refl) 
 mc .zero {ω} = zeroΛ , η (0 , refl) 
 mc .succ {z} n q = (λ p → succΛ p (n q .fst p)) , do
@@ -228,18 +230,20 @@ mc .succ {z} n q = (λ p → succΛ p (n q .fst p)) , do
 mc .succ {ω} n = (λ p → succΛ p (n .fst p)), do
   n' , prf ← n .snd
   η (suc n' , λ i p → succΛ p (prf i p))
-mc .elim-Nat {ω} X mz ms n =
-  reconstruct
+mc .elim-Nat {ω} X mz ms n = reconstruct
     ((λ p → give p Λ (X _)
       (recΛ p
         (give' p Λ (X _) mz)
-        (λ k pk → give' p Λ (X _) (ms ({! !} , give p Λ (X _) pk , ε)))
+        (λ k pk → give' p Λ (X _) (ms (giveG p k , give p Λ (X _) pk , ε)))
         (n .fst p)))
-    , {!!})
+    , iso-⋆ [∣↪]-is-Ψ⋆-Modal .fun do
+      n' , prf ← n .snd
+      η {! !}
+    )
 mc .elim-Nat {z} X mz ms n q = {!!}
 -- -- mc .elim-Nat-zero-z = {!   !}
 -- -- mc .elim-Nat-succ-z = {!   !}
--- -- mc .∣zero∣ = {!   !}
+-- mc .∣zero∣ = {!   !}
 -- -- mc .∣succ∣ = {!   !}
 -- -- mc .∣elim-Nat-ω∣ = {!   !}
 mc .[zero] = refl 
@@ -254,3 +258,6 @@ mc .[succ] = refl
 -- m : OpTT {lzero} {lsuc lzero} {lzero}
 -- m .sorts = ms
 -- m .ctors = mc
+
+
+-- elim-helper : (X : Ty) (n' : ℕ) (prf : n .fst ≡ (λ p → LC.emb-ℕ LC-syntax n'))

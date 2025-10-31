@@ -65,7 +65,17 @@ record _⋆-Modal_ (P : Prop) (M : Type ℓ) : Type ℓ where
   trivial' : (p : P) {x : M} → nope' p ≡ x
   trivial' p {x = x} = collapses p .snd x
 
-open _⋆-Modal_
+  iso-⋆ : Iso (P ⋆ M) M
+  iso-⋆ .Iso.fun (nope p) = nope' p
+  iso-⋆ .Iso.fun (η x) = x
+  iso-⋆ .Iso.fun (trivial p {x = x} i) = trivial' p {x = x} i
+  iso-⋆ .Iso.inv x = η x
+  iso-⋆ .Iso.rightInv b = refl
+  iso-⋆ .Iso.leftInv (nope p) = sym (⋆-collapses p (η (nope' p)))
+  iso-⋆ .Iso.leftInv (η x) = refl
+  iso-⋆ .Iso.leftInv (trivial p {x = x} i) j = {!!}
+
+open _⋆-Modal_ public
 
 record _→-Modal (P : Prop) (M : Type ℓ) : Type ℓ where
   no-eta-equality
@@ -93,7 +103,6 @@ give-give' : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : M .fst)
   → give p A M (give' p A M a) ≡ a
 give-give' p A M a = transport⁻Transport (M .snd _) a
 
-
 give'-give : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : A p)
   → give' p A M (give p A M a) ≡ a
 give'-give p A M a = transportTransport⁻ (M .snd _) a
@@ -112,9 +121,14 @@ G' {P = P} A B = Σ[ a ∈ P →ᴰ A ] B a
 
 syntax G A (λ x → B) = G[ x ∈ A ] B
 
-G-collapses : ∀ (p : P) (A : P → (Type ℓ)) (B : P →ᴰ A → Type ℓ)
+G-collapses : ∀ (p : P) {A : P → (Type ℓ)} {B : P →ᴰ A → Type ℓ}
   {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}} → G[ a ∈ A ] B a ≡ A p
-G-collapses p A B = {!   !}
+G-collapses p {A = A} {B = B} = {! !}
+
+giveG : ∀ {A : P → (Type ℓ)} {B : P →ᴰ A → Type ℓ}
+  {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → (p : P) → A p → G[ x ∈ A ] B x
+giveG {A = A} {B = B} p a = transport (sym (G-collapses p)) a
 
 instance
   [∣↪]-is-Ψ⋆-Modal : {x : P → M} → P ⋆-Modal [ M ∣ P ↪ x ]

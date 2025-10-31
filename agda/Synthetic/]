@@ -1,252 +1,166 @@
-{-# OPTIONS --prop --cubical -WnoUnsupportedIndexedMatch #-}
-module Synthetic.Semantics where
+{-# OPTIONS --prop --cubical -WnoUnsupportedIndexedMatch --allow-unsolved-metas #-}
+module Synthetic.Utils where
 
-open import Cubical.Foundations.Prelude
-  renaming (_∙_ to trans)
+open import Cubical.Foundations.Prelude renaming (_∙_ to trans)
 open import Cubical.Foundations.Equiv
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Foundations.Transport
 open import Cubical.Data.Sigma
 open import Data.Unit
 open import Data.Empty
-open import Data.Nat hiding (zero)
 open import Agda.Primitive
-
-open import Synthetic.Model
-open import Synthetic.Utils
-  
-{-# BUILTIN REWRITE _≡_ #-}
-
--- We will define semantics for the synthetic model by working in the glued
--- topos Set ↓ <Γ , Id> . This can be emulated in Agda by postulates.
-
--- In particular, let Λ be the syntactic (initial) uni-typed CwF of lambda
--- calculus terms quotiented by βη. Its objects are natural numbers. We have the
--- presheaf category Psh(Λ) which is a topos, and contains a second-order model
--- of Λ which is the syntax. We can glue along the global sections functor Γ :
--- Psh(Λ) → Set to get a new topos Set ↓ Γ. However, instead we glue along
--- < Γ , Id > : Psh(Λ) × Set → Set which sends (X , A) to X × Γ(A). This
--- also gives us a "purely logical" projection free of any syntactic data.
--- We will use the left slot Psh(Λ) for the computational layer, and the
--- right slot Set for the logical layer. We postulate two propositions Ψ and L
--- in the internal language of Set ↓ < Γ , Id > which are disjoint, i.e., Ψ
--- ∧ L → ⊥. These correspond to the unique maps 0 → 0 × Γ(1) and 0 → 1 × Γ(0)
--- respectively.
+open import Relation.Binary.Reasoning.Syntax
+import Agda.Builtin.Equality
 
 private
   variable
-    ℓ : Level
+    ℓ ℓ' : Level
+    M N : Type ℓ
+    P : Prop
 
-postulate
-  Ψ : Prop
-  L : Prop
-  disjoint : Ψ → L → ⊥
+propFunExt : {A : Prop} {B : A → Type ℓ} {f : (x : A) → B x} {g : (x : A) → B x}
+  → ((x : A) → f x ≡ g x) → f ≡ g
+propFunExt h i x = h x i
 
-●_ : Type ℓ → Type ℓ
-● A = (L or Ψ) ⋆ A
-
-nocompᴰ : ∀ {A : Ψ → Type ℓ} → (q : L) → (Ψ →ᴰ A)
-nocompᴰ q = λ p → ⊥-elim (disjoint p q)
-
-nocomp : ∀ {A : Type ℓ} → L → (Ψ → A)
-nocomp q = λ p → ⊥-elim (disjoint p q)
-
-Ψ-contr-under-L : ∀ {A : Ψ → Type ℓ} → L → isContr (Ψ →ᴰ A)
-Ψ-contr-under-L q = nocompᴰ q ,  λ y → propFunExt (nocompᴰ q)
-
-no-Ψ-glue-in-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}
-  → (q : L) → G A X {{y}} ≡ X (nocompᴰ q)
-no-Ψ-glue-in-L q = isoToPath (Σ-contractFstIso (Ψ-contr-under-L q))
-
-unglue-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {{y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}}
-  → (q : L) → G A X {{y}} → X (nocompᴰ q)
-unglue-L {{y}} q t = transport (no-Ψ-glue-in-L {y = y} q) t
-
-glue-L : ∀ {A : Ψ → Type ℓ} {X : (Ψ →ᴰ A) → Type ℓ} {{y : {a : Ψ →ᴰ A} → Ψ ⋆-Modal (X a)}}
-  → (q : L) → X (nocompᴰ q) → G A X {{y}}
-glue-L {{y}} q t = transport (sym (no-Ψ-glue-in-L {y = y} q)) t
-
-record LC : Set (lsuc ℓ) where
+case_to_of_ : {A : Type ℓ} (x : A) (P : A → Type ℓ') (f : (a : A) → P a) → P x
+case_to_of_ x P f = f x
+  
+record _true (P : Prop) : Type where
+  constructor [_]
   field
-    Λ : Type ℓ
-    lambda : (f : Λ → Λ) → Λ
-    apply : Λ → Λ → Λ
-    beta : ∀ f x → apply (lambda f) x ≡ f x
-    eta : ∀ f → lambda (λ x → apply f x) ≡ f
+    fact : P
 
-  _$_ : Λ → Λ → Λ
-  x $ y = apply x y
+data _or_ (P Q : Prop) : Prop where
+  inl : P → P or Q
+  inr : Q → P or Q
 
-  infixl 5 _$_
+open _true
 
-  syntax lambda (λ x → t) = ƛ x ⇒ t
+data _⋆_ (P : Prop) (M : Type ℓ) : Type ℓ where
+  nope : (p : P) → P ⋆ M
+  η : M → P ⋆ M
+  trivial : (p : P) {x : M} → nope p ≡ η x
 
-  infixl 4 ƛ _ ⇒ _
-    
-  zeroΛ : Λ
-  zeroΛ = ƛ z ⇒ ƛ s ⇒ z
+⋆-collapses : (p : P) (y : P ⋆ M) → nope p ≡ y
+⋆-collapses p (nope p) = refl
+⋆-collapses p (η x) = trivial p
+⋆-collapses p (trivial p {x = x} i) j = trivial p {x = x} (i ∧ j)
 
-  succΛ : Λ → Λ
-  succΛ n = ƛ z ⇒ ƛ s ⇒ (s $ n $ (n $ z $ s))
+⋆→-trivial : P → (P ⋆ M) ≃ ⊤
+⋆→-trivial p .fst x = tt
+⋆→-trivial p .snd .equiv-proof tt = (nope p , refl) , λ (y , _) i → (⋆-collapses p y i) , refl
 
-  id : Λ
-  id = ƛ x ⇒ x
+record _⋆-Modal_ (P : Prop) (M : Type ℓ) : Type ℓ where
+  no-eta-equality
+  field
+    prf : isEquiv {A = P true × M} {B = P true} (λ (p , _) → p)
 
-  recΛ : Λ → (Λ → Λ → Λ) → Λ → Λ
-  recΛ zr su n = n $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk)
+  collapses : P → isContr M
+  collapses p = invIsEq prf [ p ] .snd
+    ,  λ m →  λ i → retIsEq prf ([ p ] , m) i .snd
 
-  recΛβ-zero : ∀ {zr su} → recΛ zr su zeroΛ ≡ zr
-  recΛβ-zero {zr} {su} =
-      recΛ zr su zeroΛ
-    ≡⟨⟩
-      ((ƛ z ⇒ ƛ s ⇒ z) $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk))
-    ≡⟨ (λ i → (beta (λ z → ƛ s ⇒ z) zr i) $ (ƛ k ⇒ ƛ sk ⇒ su k sk)) ⟩
-      ((ƛ s ⇒ zr) $ (ƛ k ⇒ ƛ sk ⇒ su k sk))
-    ≡⟨ (λ i → (beta (λ s → zr) (ƛ k ⇒ ƛ sk ⇒ su k sk) i)) ⟩
-      zr
-    ∎
+  nope' : (p : P) → M
+  nope' p = invIsEq prf [ p ] .snd
 
-  recΛβ-succ : ∀ {zr su n} → recΛ zr su (succΛ n) ≡ su n (recΛ zr su n)
-  recΛβ-succ {zr} {su} {n} =
-      recΛ zr su (succΛ n)
-    ≡⟨⟩
-      ((ƛ z ⇒ ƛ s ⇒ (s $ n $ (n $ z $ s))) $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk))
-    ≡⟨ (λ i → (beta (λ z → ƛ s ⇒ (s $ n $ (n $ z $ s))) zr i) $ (ƛ k ⇒ ƛ sk ⇒ su k sk)) ⟩
-      ((ƛ s ⇒ (s $ n $ (n $ zr $ s))) $ (ƛ k ⇒ ƛ sk ⇒ su k sk))
-    ≡⟨ beta _ _ ⟩
-      ((ƛ k ⇒ ƛ sk ⇒ su k sk) $ n $ (n $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk)))
-    ≡⟨ (λ i → beta (λ k → ƛ sk ⇒ su k sk) n i $ (n $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk))) ⟩
-      ((ƛ sk ⇒ su n sk) $ (n $ zr $ (ƛ k ⇒ ƛ sk ⇒ su k sk)))
-    ≡⟨ beta _ _ ⟩ 
-      su n (recΛ zr su n)
-    ∎
+  trivial' : (p : P) {x : M} → nope' p ≡ x
+  trivial' p {x = x} = collapses p .snd x
 
+  iso-⋆ : Iso (P ⋆ M) M
+  iso-⋆ .Iso.fun (nope p) = nope' p
+  iso-⋆ .Iso.fun (η x) = x
+  iso-⋆ .Iso.fun (trivial p {x = x} i) = trivial' p {x = x} i
+  iso-⋆ .Iso.inv x = η x
+  iso-⋆ .Iso.rightInv b = refl
+  iso-⋆ .Iso.leftInv (nope p) = sym (⋆-collapses p (η (nope' p)))
+  iso-⋆ .Iso.leftInv (η x) = refl
+  iso-⋆ .Iso.leftInv (trivial p {x = x} i) j = {!!}
 
-  emb-ℕ : ℕ → Λ 
-  emb-ℕ 0 = zeroΛ 
-  emb-ℕ (suc x) = succΛ (emb-ℕ x)
+open _⋆-Modal_ public
 
--- We have a Ψ →-modal model of Λ in the glued topos.
-postulate instance
-  LC-syntax : {p : Ψ} → LC {ℓ}
-  
-module _ (p : Ψ) where
-  open LC {lzero} (LC-syntax {p = p}) public 
+record _→-Modal (P : Prop) (M : Type ℓ) : Type ℓ where
+  no-eta-equality
+  field
+    prf : isEquiv {A = M} {B = {{p : P}} → M} (λ x → x)
 
-  infixr 5 _∣_$_
+_→ᴰ_ : (P : Prop) → (P → Type ℓ) → Type ℓ
+_→ᴰ_ P A = (p : P) → A p
 
-  _∣_$_ : Λ → Λ → Λ
-  _∣_$_ x y = apply x y
+ext : (A : Type ℓ) → (P : Prop) → ((p : P) → A) → Type ℓ
+ext M P x = Σ[ a ∈ M ] ((p : P) → a ≡ x p)
 
-  infixr 10 _ ∣ ƛ _ ⇒ _
+[_∣_↪_] : (A : Type ℓ) → (P : Prop) → ((p : P) → A) → Type ℓ
+[_∣_↪_] = ext
 
-  syntax lambda q (λ x → t) = q ∣ ƛ x ⇒ t
+syntax ext M P (λ p → x) = [ M ∣ p ∈ P ↪ x ]
 
-open OpTT
-open OpTT-sorts
-open OpTT-ctors
+give : ∀ {P} (p : P) A → (M : [ Type ℓ ∣ P ↪ A ]) → A p → M .fst
+give p _ (M , l) a = transport (sym (l p)) a
 
-ms : OpTT-sorts {lzero} {lsuc lzero} {lzero}
-ms .$ = Ψ
-ms .Ty = [ Type ∣ Ψ ↪ Λ ]
-ms .Tm z A = L → A .fst
-ms .Tm ω A = A .fst
-ms .Ex = Ψ →ᴰ Λ
-[ ms ]' {A} x q = x
+give' : ∀ {P} (p : P) A → (M : [ Type ℓ ∣ P ↪ A ]) → M .fst → A p
+give' p _ (M , l) a = transport (l p) a
 
-uneraseTms : ∀ {Δ} → L → Tms ms z Δ → Tms ms ω Δ
-uneraseTms q ε = ε
-uneraseTms q (_,_ {j = z} a γ) = (λ z₁ → a q) , uneraseTms q γ
-uneraseTms q (_,_ {j = ω} a γ) = a q , uneraseTms q γ
+give-give' : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : M .fst)
+  → give p A M (give' p A M a) ≡ a
+give-give' p A M a = transport⁻Transport (M .snd _) a
 
-uneraseTms-id : ∀ {Δ} {q : L} {γ : Tms ms z Δ} → [[_]] ms (uneraseTms q γ) ≡ γ
-uneraseTms-id {q = q} {γ = ε} = refl
-uneraseTms-id {q = q} {γ = _,_ {j = z} a γ} i = a , uneraseTms-id {q = q} {γ = γ} i
-uneraseTms-id {q = q} {γ = _,_ {j = ω} a γ} i = a , uneraseTms-id {q = q} {γ = γ} i
+give'-give : ∀ {P} (p : P) A (M : [ Type ℓ ∣ P ↪ A ]) (a : A p)
+  → give' p A M (give p A M a) ≡ a
+give'-give p A M a = transportTransport⁻ (M .snd _) a
 
-mc : OpTT-ctors ms
-∣ mc ∣ {A~ = A~} x p = give' p Λ (A~ p) (x p)
-⟨ mc ⟩ {z} {A~} x p q = nocomp q p
-⟨ mc ⟩ {ω} {A~} x p = give p Λ (A~ p) (x p)
-mc .∣⟨⟩∣ {A~ = A~} {e} j p = give'-give p Λ (A~ p) (e p) j
-mc .⟨∣∣⟩ {A~ = A~} {t~ = t~} j p = give-give' p Λ (A~ p) (t~ p) j
-mc .[⟨⟩] {A~} {p = p} = propFunExt λ q → nocomp q p
-mc .∅ = id
-mc .bind {X' = X'} f γ q = transport (λ i → X' (uneraseTms-id {q = q} {γ = γ} i) .fst) (f (uneraseTms q γ) q)
-mc .bind[]-1 = {!   !}  -- ok
-mc .bind[]-2 = {!   !}  -- ok
-mc .lm f p = lambda p (λ q → f (λ _ → q) p)
-mc .ap x y p = apply p (x p) (y p)
-mc .ze = zeroΛ
-mc .su x p = succΛ p (x p)
--- mc .rec = λ z₁ z₂ z₃ → z₁
-mc .Π z A X = G[ f ∈ Λ ]
-  [ ((a : L → A .fst) → X a .fst)
-    ∣ p ∈ Ψ ↪ (λ a → give p Λ (X a) (f p)) ]
-  , λ p → G-collapses p _ _
-mc .Π ω A X =  G[ f ∈ Λ ]
-  [ ((a : A .fst) → X (λ _ → a) .fst)
-    ∣ p ∈ Ψ ↪ (λ a → give p Λ (X (λ _ → a)) (apply p (f p) (give' p Λ A a))) ]
-  , λ p → G-collapses p _ _
-mc .lam {z} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
-mc .lam {ω} {i = z} f q = glue-L q ((λ a → f a q) , nocompᴰ q) 
-mc .lam {z} {A = A} {i = ω} {X = X} f =
-  (λ p → give' p Λ (X _) (f (λ q → nocomp q p)))
-  , f
-  ,  λ p → funExt λ a →  sym ({!!}) -- ok
-mc .lam {ω} {A = A} {i = ω} {X = X} f =
-  ( λ p →  lambda p (λ x → give' p Λ (X _) (f (give p Λ A x))))
-  , f
-  , {!!}  -- ok
-mc .app {z} {z} f a q = f q .snd .fst a
-mc .app {z} {ω} f a q = f q .snd .fst (a q) 
-mc .app {ω} {z} (_ , f' , _) a = f' a
-mc .app {ω} {ω} (_ , f' , _) a = f' a 
-mc .lam-app-z = {! !} -- ok
-mc .app-lam-z = {! !} -- ok
-mc .∣lam-ω∣ = {!   !}
--- mc .∣app-ω∣ = {!   !}
--- -- mc .∣lam-z∣ = {!   !}
--- -- mc .∣app-z∣ = {!   !}
--- mc .[lam] = {! refl  !}
--- -- mc .[app] = {!   !}
-mc .Spec A x = G[ y ∈ Λ ] ([ A .fst ∣ p ∈ Ψ ↪ give p Λ A (y p) ] × (● (x ≡ y))) , λ p → G-collapses p _ _ 
-mc .specz t q = glue-L q ((t q , nocompᴰ q) , nope (inl q))
-mc .spec {A = A} {e = e} t prf = (λ p → give' p Λ A t) , ( t ,  λ p → sym (give-give' p Λ A t)) , η (sym prf)
-mc .unspec {z} {A = A} {e} t q = t q .snd .fst .fst
-mc .unspec {ω} {A = A} {e} t = t .snd .fst .fst
-mc .∣spec∣ = {!   !} -- ok
-mc .∣unspec∣ {e} {A~} {t~} = {! !} -- ok
-mc .[spec] = {!   !}
--- -- mc .[unspec] = {!   !}
-mc .Nat =  G[ x ∈ Λ ] (Ψ ⋆ (Σ[ n ∈ ℕ ] (x ≡ λ p → emb-ℕ p n))) , λ p → G-collapses p _ _
-mc .zero {z} _ = zeroΛ , η (0 , refl) 
-mc .zero {ω} = zeroΛ , η (0 , refl) 
-mc .succ {z} n q = (λ p → succΛ p (n q .fst p)) , do
-  n' , prf ← n q .snd
-  η (suc n' , λ i p →  succΛ p (prf i p))
-mc .succ {ω} n = (λ p → succΛ p (n .fst p)), do
-  n' , prf ← n .snd
-  η (suc n' , λ i p → succΛ p (prf i p))
-mc .elim-Nat {ω} X mz ms n =
-  reconstruct
-    ((λ p → give p Λ (X _) (recΛ p (give' p Λ (X _) mz) {!!} {!!})  )
-    , {!!})
-mc .elim-Nat {z} X mz ms n q = {!!}
--- -- mc .elim-Nat-zero-z = {!   !}
--- -- mc .elim-Nat-succ-z = {!   !}
--- -- mc .∣zero∣ = {!   !}
--- -- mc .∣succ∣ = {!   !}
--- -- mc .∣elim-Nat-ω∣ = {!   !}
-mc .[zero] = refl 
-mc .[succ] = refl
--- -- mc .[elim-Nat] = {!   !}
--- -- mc .Num = {!   !}
--- -- mc .nat-num = {!   !}
--- -- mc .rec-η-1 = {!   !}
--- -- mc .rec-η-2 = {!   !}
+G : (A : P → (Type ℓ))
+  → (B : (P →ᴰ A) → Type ℓ)
+  → {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → Type ℓ
+G {P = P} A B = Σ[ a ∈ P →ᴰ A ] B a
 
-  
--- m : OpTT {lzero} {lsuc lzero} {lzero}
--- m .sorts = ms
--- m .ctors = mc
+G' : (A : P → (Type ℓ))
+  → (B : (P →ᴰ A) → Type ℓ)
+  → {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → Type ℓ
+G' {P = P} A B = Σ[ a ∈ P →ᴰ A ] B a
+
+syntax G A (λ x → B) = G[ x ∈ A ] B
+
+G-collapses : ∀ (p : P) {A : P → (Type ℓ)} {B : P →ᴰ A → Type ℓ}
+  {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}} → G[ a ∈ A ] B a ≡ A p
+G-collapses p {A = A} {B = B} = {! !}
+
+giveG : ∀ {A : P → (Type ℓ)} {B : P →ᴰ A → Type ℓ}
+  {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → (p : P) → A p → G[ x ∈ A ] B x
+giveG {A = A} {B = B} p a = transport (sym (G-collapses p)) a
+
+instance
+  [∣↪]-is-Ψ⋆-Modal : {x : P → M} → P ⋆-Modal [ M ∣ P ↪ x ]
+  [∣↪]-is-Ψ⋆-Modal = {!   !}
+
+  ⋆-is-⋆-Modal : P ⋆-Modal (P ⋆ M)
+  ⋆-is-⋆-Modal = {!!}
+
+  or⋆-is-⋆-Modal : ∀ {Q} → P ⋆-Modal ((Q or P) ⋆ M)
+  or⋆-is-⋆-Modal = {!!}
+
+  ×-is-⋆-Modal : {A B : Type ℓ}
+    → {{_ : P ⋆-Modal A}} → {{_ : P ⋆-Modal B}} → P ⋆-Modal (A × B)
+  ×-is-⋆-Modal = {!!}
+
+_>>=_ : P ⋆ M → (M → P ⋆ N) → P ⋆ N
+nope p >>= f = nope p
+η x >>= f = f x
+_>>=_ {N = N} (trivial p {x = x} i) f = ⋆-collapses {M = N} p (f x) i
+
+reconstruction : Iso (G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ]) N
+reconstruction .Iso.fun x = x .snd .fst
+reconstruction .Iso.inv x = (λ p → x) , x , λ _ → refl
+reconstruction .Iso.rightInv x = refl
+reconstruction .Iso.leftInv (x , y , z) i = (λ p → z p i)
+  , y , λ p j → z p (i ∧ j)
+
+reconstruct : G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ] → N
+reconstruct = reconstruction .Iso.fun
+
+deconstruct : N → G[ x ∈ (λ _ → N) ] [ N ∣ P ↪ x ]
+deconstruct = reconstruction .Iso.inv
+
+glue-pi : ∀ {A : P → (Type ℓ)} {B : P →ᴰ A → Type ℓ} {{BP⋆ : ∀ {a : P →ᴰ A} → P ⋆-Modal (B a)}}
+  → Iso ((n : G[ x ∈ A ] B x) → B (n .fst)) {!!}
